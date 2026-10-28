@@ -1,15 +1,9 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.1",
   "date": "2026-10-28",
-  "new": [
-    "Khi chọn vùng, vùng lần trước được hiện sẵn: nhấn Enter là quay luôn, có nút \"Vùng trước\" để lấy lại"
-  ],
+  "new": [],
   "improved": [
-    "Màn chính gọn hơn: cửa sổ app nhỏ lại, các tuỳ chọn định dạng / fps / chuột / âm thanh chuyển vào Cài đặt",
-    "Cửa sổ tự nở rộng khi mở màn Xem lại & cắt, quay về thì thu gọn lại",
-    "Timeline: thêm dải thước phía trên để bấm hoặc kéo vạch đỏ dễ hơn, đầu vạch đỏ to hơn"
+    "Icon mới gọn hơn: bỏ vệt sáng bóng, chỉ giữ khối màu và gradient, nhìn rõ hơn trên thanh taskbar"
   ],
-  "fixed": [
-    "Quay một cửa sổ (trình duyệt, app dùng card đồ hoạ) không còn bị ra màu trắng"
-  ]
+  "fixed": []
 }
