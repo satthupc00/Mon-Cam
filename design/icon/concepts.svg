@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="840" viewBox="0 0 1600 840"><rect width="1600" height="840" fill="#f7f7f4"/><text x="60" y="78" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#161616">Logo concepts</text><text x="60" y="116" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="20" fill="#6b6b6b">Concepts for review — pick a direction (or tell me what you like in each).</text><rect x="60" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#161616" stroke-width="2"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="90" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="c0-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<radialGradient id="c0-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="486" rx="200" ry="18" fill="#000" opacity=".28"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="58">
+ <g stroke="#0F2C73" transform="translate(0,14)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+ <g stroke="url(#c0-b)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+</g>
+<path d="M30 120Q34 52 96 34" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".45"/>
+<circle cx="256" cy="268" r="112" fill="#6E0C0F"/>
+<circle cx="256" cy="254" r="112" fill="url(#c0-r)"/>
+<ellipse cx="214" cy="200" rx="44" ry="26" transform="rotate(-30 214 200)" fill="#fff" opacity=".55"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="90" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s064-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<radialGradient id="s064-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="486" rx="200" ry="18" fill="#000" opacity=".28"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="58">
+ <g stroke="#0F2C73" transform="translate(0,14)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+ <g stroke="url(#s064-b)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+</g>
+<path d="M30 120Q34 52 96 34" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".45"/>
+<circle cx="256" cy="268" r="112" fill="#6E0C0F"/>
+<circle cx="256" cy="254" r="112" fill="url(#s064-r)"/>
+<ellipse cx="214" cy="200" rx="44" ry="26" transform="rotate(-30 214 200)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="122" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="180" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s032-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<radialGradient id="s032-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="486" rx="200" ry="18" fill="#000" opacity=".28"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="58">
+ <g stroke="#0F2C73" transform="translate(0,14)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+ <g stroke="url(#s032-b)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+</g>
+<path d="M30 120Q34 52 96 34" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".45"/>
+<circle cx="256" cy="268" r="112" fill="#6E0C0F"/>
+<circle cx="256" cy="254" r="112" fill="url(#s032-r)"/>
+<ellipse cx="214" cy="200" rx="44" ry="26" transform="rotate(-30 214 200)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="196" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="238" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s016-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<radialGradient id="s016-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="486" rx="200" ry="18" fill="#000" opacity=".28"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="58">
+ <g stroke="#0F2C73" transform="translate(0,14)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+ <g stroke="url(#s016-b)"><path d="M44 170V96Q44 44 96 44H170"/><path d="M342 44H416Q468 44 468 96V170"/><path d="M468 342V416Q468 468 416 468H342"/><path d="M170 468H96Q44 468 44 416V342"/></g>
+</g>
+<path d="M30 120Q34 52 96 34" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".45"/>
+<circle cx="256" cy="268" r="112" fill="#6E0C0F"/>
+<circle cx="256" cy="254" r="112" fill="url(#s016-r)"/>
+<ellipse cx="214" cy="200" rx="44" ry="26" transform="rotate(-30 214 200)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="246" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="90.0" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">A · Khung chọn vùng</text><text x="90.0" y="664" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="15" font-weight="700" fill="#161616" letter-spacing="1.5">RECOMMENDED</text><text x="90.0" y="698" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">4 góc khung chọn vùng ôm nút ghi đỏ: quay</text><text x="90.0" y="724" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">đúng vùng mình chọn</text><rect x="562.667" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="592.667" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="c1-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<linearGradient id="c1-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A9BF5"/><stop offset="1" stop-color="#173FA0"/></linearGradient>
+<radialGradient id="c1-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="452" rx="220" ry="20" fill="#000" opacity=".28"/>
+<path d="M368 214L488 140V388L368 314Z" fill="#0F2C73" transform="translate(0,14)"/>
+<path d="M368 214L488 140V388L368 314Z" fill="url(#c1-s)"/>
+<rect x="22" y="120" width="360" height="300" rx="64" fill="#0F2C73"/>
+<rect x="22" y="104" width="360" height="300" rx="64" fill="url(#c1-b)"/>
+<path d="M60 170Q64 124 120 120H250" stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none" opacity=".4"/>
+<circle cx="202" cy="262" r="96" fill="#6E0C0F"/>
+<circle cx="202" cy="252" r="96" fill="url(#c1-r)"/>
+<ellipse cx="168" cy="210" rx="36" ry="22" transform="rotate(-30 168 210)" fill="#fff" opacity=".55"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="592.667" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s164-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<linearGradient id="s164-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A9BF5"/><stop offset="1" stop-color="#173FA0"/></linearGradient>
+<radialGradient id="s164-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="452" rx="220" ry="20" fill="#000" opacity=".28"/>
+<path d="M368 214L488 140V388L368 314Z" fill="#0F2C73" transform="translate(0,14)"/>
+<path d="M368 214L488 140V388L368 314Z" fill="url(#s164-s)"/>
+<rect x="22" y="120" width="360" height="300" rx="64" fill="#0F2C73"/>
+<rect x="22" y="104" width="360" height="300" rx="64" fill="url(#s164-b)"/>
+<path d="M60 170Q64 124 120 120H250" stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none" opacity=".4"/>
+<circle cx="202" cy="262" r="96" fill="#6E0C0F"/>
+<circle cx="202" cy="252" r="96" fill="url(#s164-r)"/>
+<ellipse cx="168" cy="210" rx="36" ry="22" transform="rotate(-30 168 210)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="624.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="682.667" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s132-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<linearGradient id="s132-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A9BF5"/><stop offset="1" stop-color="#173FA0"/></linearGradient>
+<radialGradient id="s132-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="452" rx="220" ry="20" fill="#000" opacity=".28"/>
+<path d="M368 214L488 140V388L368 314Z" fill="#0F2C73" transform="translate(0,14)"/>
+<path d="M368 214L488 140V388L368 314Z" fill="url(#s132-s)"/>
+<rect x="22" y="120" width="360" height="300" rx="64" fill="#0F2C73"/>
+<rect x="22" y="104" width="360" height="300" rx="64" fill="url(#s132-b)"/>
+<path d="M60 170Q64 124 120 120H250" stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none" opacity=".4"/>
+<circle cx="202" cy="262" r="96" fill="#6E0C0F"/>
+<circle cx="202" cy="252" r="96" fill="url(#s132-r)"/>
+<ellipse cx="168" cy="210" rx="36" ry="22" transform="rotate(-30 168 210)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="698.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="740.667" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s116-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5DB4FF"/><stop offset="1" stop-color="#1D52C9"/></linearGradient>
+<linearGradient id="s116-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A9BF5"/><stop offset="1" stop-color="#173FA0"/></linearGradient>
+<radialGradient id="s116-r" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="452" rx="220" ry="20" fill="#000" opacity=".28"/>
+<path d="M368 214L488 140V388L368 314Z" fill="#0F2C73" transform="translate(0,14)"/>
+<path d="M368 214L488 140V388L368 314Z" fill="url(#s116-s)"/>
+<rect x="22" y="120" width="360" height="300" rx="64" fill="#0F2C73"/>
+<rect x="22" y="104" width="360" height="300" rx="64" fill="url(#s116-b)"/>
+<path d="M60 170Q64 124 120 120H250" stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none" opacity=".4"/>
+<circle cx="202" cy="262" r="96" fill="#6E0C0F"/>
+<circle cx="202" cy="252" r="96" fill="url(#s116-r)"/>
+<ellipse cx="168" cy="210" rx="36" ry="22" transform="rotate(-30 168 210)" fill="#fff" opacity=".55"/>
+</svg>
+</g><text x="748.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="592.6666666666667" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">B · Máy quay</text><text x="592.6666666666667" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Máy quay xanh, ống kính đỏ: nhìn là biết</text><text x="592.6666666666667" y="696" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">app quay phim</text><rect x="1065.33" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="1095.33" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="c2-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C86FF"/><stop offset="1" stop-color="#4B2BD6"/></linearGradient>
+<radialGradient id="c2-r" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="484" rx="210" ry="20" fill="#000" opacity=".28"/>
+<circle cx="256" cy="276" r="232" fill="#2A1680"/>
+<circle cx="256" cy="252" r="232" fill="url(#c2-b)"/>
+<circle cx="256" cy="252" r="160" fill="#2A1680"/>
+<circle cx="256" cy="270" r="140" fill="#6E0C0F"/>
+<circle cx="256" cy="248" r="140" fill="url(#c2-r)"/>
+<ellipse cx="204" cy="180" rx="56" ry="30" transform="rotate(-30 204 180)" fill="#fff" opacity=".55"/>
+<path d="M70 190Q110 70 230 40" stroke="#fff" stroke-width="16" stroke-linecap="round" fill="none" opacity=".35"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="1095.33" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s264-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C86FF"/><stop offset="1" stop-color="#4B2BD6"/></linearGradient>
+<radialGradient id="s264-r" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="484" rx="210" ry="20" fill="#000" opacity=".28"/>
+<circle cx="256" cy="276" r="232" fill="#2A1680"/>
+<circle cx="256" cy="252" r="232" fill="url(#s264-b)"/>
+<circle cx="256" cy="252" r="160" fill="#2A1680"/>
+<circle cx="256" cy="270" r="140" fill="#6E0C0F"/>
+<circle cx="256" cy="248" r="140" fill="url(#s264-r)"/>
+<ellipse cx="204" cy="180" rx="56" ry="30" transform="rotate(-30 204 180)" fill="#fff" opacity=".55"/>
+<path d="M70 190Q110 70 230 40" stroke="#fff" stroke-width="16" stroke-linecap="round" fill="none" opacity=".35"/>
+</svg>
+</g><text x="1127.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="1185.33" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s232-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C86FF"/><stop offset="1" stop-color="#4B2BD6"/></linearGradient>
+<radialGradient id="s232-r" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="484" rx="210" ry="20" fill="#000" opacity=".28"/>
+<circle cx="256" cy="276" r="232" fill="#2A1680"/>
+<circle cx="256" cy="252" r="232" fill="url(#s232-b)"/>
+<circle cx="256" cy="252" r="160" fill="#2A1680"/>
+<circle cx="256" cy="270" r="140" fill="#6E0C0F"/>
+<circle cx="256" cy="248" r="140" fill="url(#s232-r)"/>
+<ellipse cx="204" cy="180" rx="56" ry="30" transform="rotate(-30 204 180)" fill="#fff" opacity=".55"/>
+<path d="M70 190Q110 70 230 40" stroke="#fff" stroke-width="16" stroke-linecap="round" fill="none" opacity=".35"/>
+</svg>
+</g><text x="1201.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" x="1243.33" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="s216-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C86FF"/><stop offset="1" stop-color="#4B2BD6"/></linearGradient>
+<radialGradient id="s216-r" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#FF9294"/><stop offset=".55" stop-color="#E5383B"/><stop offset="1" stop-color="#8E1215"/></radialGradient>
+</defs>
+<ellipse cx="256" cy="484" rx="210" ry="20" fill="#000" opacity=".28"/>
+<circle cx="256" cy="276" r="232" fill="#2A1680"/>
+<circle cx="256" cy="252" r="232" fill="url(#s216-b)"/>
+<circle cx="256" cy="252" r="160" fill="#2A1680"/>
+<circle cx="256" cy="270" r="140" fill="#6E0C0F"/>
+<circle cx="256" cy="248" r="140" fill="url(#s216-r)"/>
+<ellipse cx="204" cy="180" rx="56" ry="30" transform="rotate(-30 204 180)" fill="#fff" opacity=".55"/>
+<path d="M70 190Q110 70 230 40" stroke="#fff" stroke-width="16" stroke-linecap="round" fill="none" opacity=".35"/>
+</svg>
+</g><text x="1251.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="1095.3333333333335" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">C · Nút REC</text><text x="1095.3333333333335" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Nút REC đỏ nổi trên đế tím: bấm là quay</text></svg>

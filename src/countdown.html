@@ -1,0 +1,10 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Đếm ngược</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;display:grid;place-items:center;font:800 96px/1 "Segoe UI",sans-serif;color:#fff}
+.n{width:160px;height:160px;border-radius:50%;background:rgba(31,33,38,.85);border:3px solid #E5383B;display:grid;place-items:center;animation:p 1s cubic-bezier(.34,1.56,.64,1) infinite}
+@keyframes p{0%{transform:scale(.7);opacity:0}25%{transform:scale(1);opacity:1}90%{opacity:1}100%{opacity:0}}
+</style></head>
+<body><div class="n" id="n">3</div>
+<script>let k=3;const n=document.getElementById('n');const t=setInterval(()=>{k--;if(k<=0){clearInterval(t);n.style.display='none';return}n.textContent=k},1000);</script>
+</body></html>

@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Khung quay</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+.f{position:fixed;inset:0;border:3px solid #E5383B;border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);animation:b 1.6s ease-in-out infinite}
+.f.paused{border-color:#F2B84B;border-style:dashed;animation:none}
+@keyframes b{50%{border-color:rgba(229,56,59,.45)}}
+@media (prefers-reduced-motion:reduce){.f{animation:none}}
+</style></head>
+<body><div class="f" id="f"></div>
+<script>api.on('rec:state', s => document.getElementById('f').classList.toggle('paused', s.state === 'paused'));</script>
+</body></html>

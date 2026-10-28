@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><title>Chọn vùng</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{background:#000;cursor:crosshair}
+#shot{position:fixed;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+#dim{position:fixed;inset:0;pointer-events:none}
+.sel{position:fixed;border:2px dashed var(--red);box-shadow:0 0 0 1px rgba(0,0,0,.4);display:none;cursor:move}
+.sel .h{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--red);border-radius:2px}
+.h.nw{left:-7px;top:-7px;cursor:nwse-resize}.h.ne{right:-7px;top:-7px;cursor:nesw-resize}
+.h.sw{left:-7px;bottom:-7px;cursor:nesw-resize}.h.se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.h.n{left:calc(50% - 6px);top:-7px;cursor:ns-resize}.h.s{left:calc(50% - 6px);bottom:-7px;cursor:ns-resize}
+.h.w{left:-7px;top:calc(50% - 6px);cursor:ew-resize}.h.e{right:-7px;top:calc(50% - 6px);cursor:ew-resize}
+.tag{position:fixed;background:var(--red);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:5px;font-variant-numeric:tabular-nums;display:none;pointer-events:none}
+.bar{position:fixed;display:none;gap:6px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 10px 24px rgba(0,0,0,.45);cursor:default;align-items:center;animation:barIn .25s var(--ease-out)}
+@keyframes barIn{from{opacity:0;transform:translateY(6px)}}
+.bar .div{width:1px;align-self:stretch;background:var(--line);margin:2px}
+.bar .ibtn.on{background:var(--selected-bg);border-color:var(--red);color:#fff}
+.bar .ibtn.off{color:var(--muted)}
+.bar kbd{background:rgba(0,0,0,.2);border-color:rgba(0,0,0,.2);color:#fff}
+.hint{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:rgba(31,33,38,.92);border:1px solid var(--line);border-radius:8px;padding:8px 14px;white-space:nowrap;pointer-events:none;transition:opacity .2s}
+.loupe{position:fixed;width:120px;height:120px;border-radius:8px;border:2px solid #fff;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.5);pointer-events:none;display:none;background:#000}
+.loupe canvas{display:block}
+.loupe span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);color:#fff;font-size:10.5px;text-align:center;font-variant-numeric:tabular-nums}
+</style></head>
+<body>
+<img id="shot" alt="">
+<canvas id="dim"></canvas>
+<div class="sel" id="sel"><i class="h nw" data-h="nw"></i><i class="h n" data-h="n"></i><i class="h ne" data-h="ne"></i><i class="h e" data-h="e"></i><i class="h se" data-h="se"></i><i class="h s" data-h="s"></i><i class="h sw" data-h="sw"></i><i class="h w" data-h="w"></i></div>
+<div class="tag" id="tag"></div>
+<div class="hint" id="hint">Kéo để chọn vùng · Bấm 1 lần để chọn cả màn hình · <kbd>Enter</kbd> quay · <kbd>Esc</kbd> huỷ</div>
+<div class="bar" id="bar">
+  <button class="btn pri" id="go" title="Bắt đầu quay (Enter)" data-i="play">Quay <kbd>Enter</kbd></button>
+  <span class="div"></span>
+  <button class="chip" data-p="1280x720" title="Đặt vùng 1280×720">1280×720</button>
+  <button class="chip" data-p="1920x1080" title="Đặt vùng 1920×1080">1920×1080</button>
+  <button class="chip" data-p="square" title="Vùng vuông">Vuông</button>
+  <span class="div"></span>
+  <button class="ibtn" id="tCursor" title="Quay kèm con trỏ chuột"></button>
+  <button class="ibtn" id="tAudio" title="Thu âm thanh máy"></button>
+  <button class="ibtn" id="cancel" title="Huỷ (Esc)" data-i="x"></button>
+</div>
+<div class="loupe" id="loupe"><canvas id="lc" width="120" height="120"></canvas><span id="lpos"></span></div>
+<script src="icons.js"></script>
+<script src="overlay.js"></script>
+</body></html>

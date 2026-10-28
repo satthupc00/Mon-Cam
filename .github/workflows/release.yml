@@ -1,0 +1,58 @@
+name: Build & Release (Windows)
+
+on:
+  push:
+    paths:
+      - package.json
+      - src/whatsnew.json
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version
+        id: ver
+        shell: bash
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> $GITHUB_OUTPUT
+          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null; then
+            echo "Release v$V already exists, skipping"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.ver.outputs.skip != 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.ver.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Release notes from whatsnew.json
+        if: steps.ver.outputs.skip != 'true'
+        shell: bash
+        run: |
+          node -e "
+          const w=require('./src/whatsnew.json');const out=[];
+          const sec=(k,t)=>{if(w[k]&&w[k].length){out.push('### '+t);w[k].forEach(x=>out.push('- '+x));out.push('');}};
+          sec('new','Mới');sec('improved','Cải thiện');sec('fixed','Sửa lỗi');
+          out.push('Tải **MonCam-Setup-'+w.version+'.exe** bên dưới để cài. Bản đã cài sẽ tự báo khi có bản mới.');
+          require('fs').writeFileSync('build/release-notes.md',out.join('\n'));"
+
+      - name: Build & publish
+        if: steps.ver.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --x64 --publish always

@@ -1,0 +1,11 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hiệu ứng click</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+i{position:fixed;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid #F2B84B;background:rgba(242,184,75,.25);animation:r .5s cubic-bezier(.22,1,.36,1) forwards;pointer-events:none}
+i.right{border-color:#4FA8FF;background:rgba(79,168,255,.25)}
+@keyframes r{from{transform:scale(.3);opacity:1}to{transform:scale(1.2);opacity:0}}
+</style></head>
+<body>
+<script>api.on('fx:click', p => { const i = document.createElement('i'); if (p.right) i.className = 'right'; i.style.left = p.x + 'px'; i.style.top = p.y + 'px'; document.body.appendChild(i); setTimeout(() => i.remove(), 600); });</script>
+</body></html>

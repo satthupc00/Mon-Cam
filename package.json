@@ -1,0 +1,36 @@
+{
+  "name": "mon-cam",
+  "productName": "Mon Cam",
+  "version": "1.0.0",
+  "description": "Quay màn hình MP4/GIF, xem lại và cắt nhanh",
+  "author": "Mondiro",
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "release": "electron-builder --win --x64 --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "ffmpeg-static": "^5.3.0"
+  },
+  "optionalDependencies": {
+    "uiohook-napi": "^1.5.5"
+  },
+  "devDependencies": {
+    "electron": "43.8.4",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.mondiro.moncam",
+    "productName": "Mon Cam",
+    "artifactName": "MonCam-Setup-${version}.${ext}",
+    "files": ["main.js", "preload.js", "lib/**", "src/**", "build/icon.png", "package.json"],
+    "asarUnpack": ["node_modules/ffmpeg-static/**", "node_modules/uiohook-napi/**"],
+    "directories": { "buildResources": "build", "output": "dist" },
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.ico" },
+    "nsis": { "oneClick": true, "perMachine": false, "deleteAppDataOnUninstall": false, "shortcutName": "Mon Cam" },
+    "publish": [{ "provider": "github", "owner": "satthupc00", "repo": "Mon-Cam", "releaseType": "release" }]
+  }
+}

@@ -1,0 +1,29 @@
+:root{
+  --chrome:#1F2126;--panel:#26292F;--line:#363A42;--hover:#2F333A;--stage:#2B2D31;
+  --text:#E8E9EC;--muted:#8D929C;--red:#E5383B;--warn:#F2B84B;--selected-bg:#3A2426;--green:#2EB872;
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);--t-fast:.12s;--t-med:.22s;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;color:var(--text);font:13px/1.4 "Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none}
+button,select,input{font:inherit;color:inherit}
+button,select,input,.chip,.rec-item,.card{transition:background-color var(--t-fast) ease,border-color var(--t-fast) ease,color var(--t-fast) ease,box-shadow var(--t-med) var(--ease-out),transform var(--t-med) var(--ease-out),opacity var(--t-fast) ease}
+button:not(:disabled):active{transform:scale(.95);transition-duration:.06s}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+kbd{font:11px/1 "Segoe UI",sans-serif;background:var(--chrome);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 5px;color:var(--text)}
+.ibtn{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;padding:0;flex:0 0 auto}
+.ibtn:not(:disabled):hover{border-color:var(--red);transform:translateY(-1px)}
+.ibtn svg{width:16px;height:16px}
+.btn{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:not(:disabled):hover{border-color:var(--red);transform:translateY(-1px)}
+.btn svg{width:15px;height:15px;flex:0 0 auto}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff;font-weight:600;position:relative;overflow:hidden}
+.btn.pri:not(:disabled):hover{background:#F04447;box-shadow:0 6px 16px rgba(229,56,59,.35)}
+.btn.pri::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);opacity:0}
+.btn.pri:not(:disabled):hover::after{animation:sheen .6s ease}
+@keyframes sheen{from{left:-60%;opacity:1}to{left:130%;opacity:1}}
+.chip{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--chrome);cursor:pointer;display:inline-flex;align-items:center}
+.chip:hover{border-color:var(--red);transform:translateY(-1px)}
+.chip.on{background:var(--selected-bg);border-color:var(--red);animation:pop .28s var(--ease-spring)}
+@keyframes pop{from{transform:scale(.9)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>Mon Cam</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="win">
+  <header class="top">
+    <div class="brand">
+      <img class="brand-icon" src="icon.png" alt="">
+      <div class="brand-name"><span><span class="m">Mon</span> <span class="a">Cam</span></span><span class="latest" id="latest" hidden>latest</span></div>
+    </div>
+    <button class="btn" id="backBtn" hidden title="Về màn chính (Esc)" data-i="back">Quay mới</button>
+    <div class="tools">
+      <button class="btn" id="openDir" title="Mở thư mục lưu video" data-i="folder">Mở thư mục</button>
+      <button class="ibtn" id="setBtn" title="Cài đặt" aria-label="Cài đặt" data-i="gear"></button>
+      <button class="ibtn upd" id="updBtn" title="Kiểm tra cập nhật" aria-label="Kiểm tra cập nhật" data-i="refresh"></button>
+    </div>
+  </header>
+
+  <!-- ========== MÀN CHÍNH ========== -->
+  <div class="body" id="home">
+    <aside class="side">
+      <div class="grp fx"><h4>Định dạng</h4>
+        <div class="seg" data-key="format"><button data-v="mp4" data-i="film">MP4</button><button data-v="gif">GIF</button></div>
+        <div class="hint" id="gifHint">GIF: không có âm thanh, nên quay đoạn ngắn.</div>
+      </div>
+      <div class="grp fx"><h4>Khung hình / giây</h4>
+        <div class="seg" data-key="fps"><button data-v="15">15</button><button data-v="30">30</button><button data-v="60">60</button></div>
+      </div>
+      <div class="grp fx"><h4>Chất lượng</h4>
+        <div class="seg" data-key="quality"><button data-v="low" title="File nhẹ nhất">Nhẹ</button><button data-v="medium">Vừa</button><button data-v="high" title="Nét nhất, file nặng hơn">Cao</button></div>
+      </div>
+      <div class="grp fx"><h4>Ghi kèm</h4>
+        <label class="row"><span class="lbl" data-i="cursor">Con trỏ chuột</span><input type="checkbox" class="sw" data-key="cursor"></label>
+        <label class="row" title="Hiện vòng tròn mỗi khi bấm chuột"><span class="lbl" data-i="click">Hiệu ứng click</span><input type="checkbox" class="sw" data-key="clickFx"></label>
+        <label class="row" id="audioRow"><span class="lbl" data-i="vol">Âm thanh máy</span><input type="checkbox" class="sw" data-key="audio"></label>
+      </div>
+      <div class="grp fx"><h4>Phím tắt</h4>
+        <div class="row"><span>Bắt đầu / Dừng</span><kbd>F12</kbd></div>
+        <div class="row"><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd></div>
+        <div class="row"><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="hero"><div class="hero-in fx">
+        <div class="cards" id="modes">
+          <button class="card" data-mode="region"><span class="ic" data-i="region"></span><b>Chọn vùng</b><span>Kéo chuột chọn khu vực cần quay</span></button>
+          <button class="card" data-mode="fullscreen"><span class="ic" data-i="monitor"></span><b>Toàn màn hình</b><span>Quay cả màn hình đang có chuột</span></button>
+          <button class="card" data-mode="window"><span class="ic" data-i="window"></span><b>Một cửa sổ</b><span>Chọn 1 cửa sổ app để quay</span></button>
+        </div>
+        <div class="recbig"><button class="recbtn" id="recBtn"><i></i><span id="recLabel">Chọn vùng & quay</span></button></div>
+        <div class="sumline" id="sum"></div>
+      </div></div>
+      <div class="recent fx">
+        <h4>Vừa quay <a id="seeAll" title="Mở thư mục lưu">Xem tất cả</a></h4>
+        <div class="reclist" id="recent"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========== XEM LẠI & CẮT ========== -->
+  <div class="body" id="editor" hidden>
+    <div class="editor">
+      <div class="player" id="player">
+        <video id="vid" preload="auto"></video>
+        <img id="gifImg" alt="" hidden>
+      </div>
+      <div class="ctrl" id="ctrl">
+        <button class="ibtn" id="toIn" title="Về điểm đầu đoạn cắt (Home)" data-i="skipb"></button>
+        <button class="ibtn playb" id="playBtn" title="Phát / Dừng (Space)"></button>
+        <button class="ibtn" id="toOut" title="Tới điểm cuối đoạn cắt (End)" data-i="skipf"></button>
+        <span class="tc"><b id="tcCur">00:00.00</b> / <span id="tcDur">00:00.00</span></span>
+        <span class="sp"></span>
+        <button class="btn" id="setIn" title="Đặt điểm đầu tại vạch đỏ (I)">[ Đầu <kbd>I</kbd></button>
+        <button class="btn" id="setOut" title="Đặt điểm cuối tại vạch đỏ (O)">Cuối ] <kbd>O</kbd></button>
+        <button class="btn" id="resetCut" title="Bỏ cắt, giữ cả clip">Bỏ cắt</button>
+        <span class="vol" title="Âm lượng xem thử"><span data-i="vol"></span><input type="range" id="volume" min="0" max="100" value="80"></span>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="ruler" id="ruler"></div>
+        <div class="tlwrap" id="tl">
+          <div class="track" id="track"></div>
+          <div class="cutL" id="cutL"></div><div class="cutR" id="cutR"></div>
+          <div class="keep" id="keep"><span class="grip l" id="gripL" title="Kéo để chọn điểm đầu"></span><span class="grip r" id="gripR" title="Kéo để chọn điểm cuối"></span></div>
+          <div class="playhead" id="ph"></div>
+        </div>
+        <div class="trimrow"><span data-i="scissors"></span>Giữ đoạn <b id="keepTxt"></b><span class="sp"></span>Kéo 2 tay cầm vàng để cắt · kéo vạch đỏ để tua · <kbd>←</kbd><kbd>→</kbd> từng khung</div>
+      </div>
+    </div>
+    <aside class="eside">
+      <div class="grp"><h4>Thông tin</h4>
+        <div class="kv"><span>Tên</span><b id="iName" class="ell"></b><span>Kích thước</span><b id="iSize"></b><span>FPS</span><b id="iFps"></b><span>Thời lượng</span><b id="iDur"></b><span>Dung lượng</span><b id="iBytes"></b></div>
+      </div>
+      <div class="grp" id="mp4Grp"><h4>Lưu bản cắt</h4>
+        <div class="stack">
+          <button class="btn pri full" id="saveCut" data-i="save">Lưu MP4 đã cắt</button>
+          <label class="row" id="owRow"><span class="muted">Ghi đè file gốc</span><input type="checkbox" class="sw" id="overwrite"></label>
+        </div>
+      </div>
+      <div class="grp" id="gifGrp"><h4>Xuất GIF</h4>
+        <div class="chips" id="gifFps"><button class="chip" data-v="10">10 fps</button><button class="chip" data-v="15">15 fps</button><button class="chip" data-v="24">24 fps</button></div>
+        <div class="chips" id="gifScale"><button class="chip" data-v="50">50%</button><button class="chip" data-v="75">75%</button><button class="chip" data-v="100">100%</button></div>
+        <button class="btn full" id="saveGif" data-i="film">Xuất GIF</button>
+      </div>
+      <div class="stack bottom">
+        <button class="btn full" id="showFile" data-i="folder">Mở trong thư mục</button>
+        <button class="btn full danger" id="delFile" data-i="trash">Xoá clip này</button>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="foot"><span id="footInfo" class="ell"></span><span class="sp"></span><span class="credit">Created by Mondiro</span></footer>
+</div>
+
+<!-- Hộp thoại -->
+<div class="scrim" id="dlgSettings" hidden><div class="dlg" role="dialog" aria-label="Cài đặt">
+  <header>Cài đặt <button class="ibtn" data-close title="Đóng (Esc)" data-i="x"></button></header>
+  <div class="in">
+    <div class="grp"><h4>Thư mục lưu</h4>
+      <div class="path"><span class="sel ell" id="outDir"></span><button class="btn" id="pickDir">Đổi…</button></div></div>
+    <div class="grp"><h4>Phím tắt</h4>
+      <div class="hk"><span>Bắt đầu / Dừng quay (vùng gần nhất)</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd></div></div>
+    <div class="grp"><h4>Khác</h4>
+      <label class="row"><span>Đếm ngược 3 giây trước khi quay</span><input type="checkbox" class="sw" data-key="countdown"></label>
+      <label class="row"><span>Thu nhỏ Mon Cam khi đang quay</span><input type="checkbox" class="sw" data-key="hideWhileRec"></label>
+      <label class="row"><span>Tự mở màn Xem lại sau khi dừng</span><input type="checkbox" class="sw" data-key="openEditorAfter"></label>
+    </div>
+    <div class="grp"><h4>Phiên bản</h4>
+      <div class="verrow"><span class="v" id="verTxt"></span><button class="btn" id="wnBtn" data-i="sparkles">What's new</button><button class="ibtn upd" id="updBtn2" title="Kiểm tra cập nhật" data-i="refresh"></button></div></div>
+  </div>
+</div></div>
+
+<div class="scrim" id="dlgWhatsNew" hidden><div class="dlg" role="dialog" aria-label="What's new">
+  <header>What's new <button class="ibtn" data-close title="Đóng (Esc)" data-i="x"></button></header>
+  <div class="in" id="wnBody"></div>
+</div></div>
+
+<div class="scrim" id="dlgWindows" hidden><div class="dlg wide" role="dialog" aria-label="Chọn cửa sổ">
+  <header>Chọn cửa sổ để quay <button class="ibtn" data-close title="Đóng (Esc)" data-i="x"></button></header>
+  <div class="in"><div class="wgrid" id="wgrid"></div></div>
+</div></div>
+
+<div class="updbox" id="updBox" hidden></div>
+<div class="busy" id="busy" hidden><div class="busy-in"><div class="spin"></div><span id="busyTxt"></span><div class="pbar"><i id="busyP"></i></div></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

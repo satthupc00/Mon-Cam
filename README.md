@@ -1,0 +1,24 @@
+# Mon Cam
+
+App quay màn hình cho Windows (giống Bandicam), by Mondiro.
+
+- Quay theo vùng kéo chọn, toàn màn hình hoặc 1 cửa sổ
+- Xuất MP4 15/30/60 fps hoặc GIF
+- Bật/tắt con trỏ chuột, hiệu ứng click, âm thanh máy
+- Tạm dừng / tiếp tục khi đang quay
+- Xem lại ngay: tua bằng vạch đỏ, cắt đầu/cuối, lưu MP4 hoặc xuất GIF
+- Tự cập nhật qua GitHub Releases
+
+## Cài đặt
+Vào mục **Releases** của repo, tải `MonCam-Setup-x.y.z.exe` và chạy.
+
+## Phím tắt
+| Phím | Việc |
+|---|---|
+| F12 | Bắt đầu (vùng gần nhất) / Dừng & lưu |
+| Shift+F12 | Tạm dừng / Tiếp tục |
+| Ctrl+Shift+R | Chọn vùng mới |
+| Space · I · O · ← → | Trong màn Xem lại: phát/dừng, đặt điểm đầu/cuối, lùi/tới từng khung |
+
+## Phát hành bản mới
+Tăng `version` trong `package.json` và cập nhật `src/whatsnew.json`, rồi push. GitHub Actions sẽ tự build và tạo Release.
