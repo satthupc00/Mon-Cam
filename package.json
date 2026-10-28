@@ -31,6 +31,6 @@
     "directories": { "buildResources": "build", "output": "dist" },
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.ico" },
     "nsis": { "oneClick": true, "perMachine": false, "deleteAppDataOnUninstall": false, "shortcutName": "Mon Cam" },
-    "publish": [{ "provider": "github", "owner": "satthupc00", "repo": "Mon-Cam", "releaseType": "release" }]
+    "publish": [{ "provider": "github", "owner": "satthupc00", "repo": "Mon-Cam" }]
   }
 }

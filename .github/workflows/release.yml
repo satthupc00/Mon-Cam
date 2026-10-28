@@ -22,11 +22,13 @@ jobs:
       - name: Check version
         id: ver
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V=$(node -p "require('./package.json').version")
           echo "version=$V" >> $GITHUB_OUTPUT
-          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null; then
-            echo "Release v$V already exists, skipping"
+          if gh release view "v$V" --json assets -q '.assets[].name' 2>/dev/null | grep -qx "MonCam-Setup-$V.exe"; then
+            echo "Release v$V already has the installer, skipping"
             echo "skip=true" >> $GITHUB_OUTPUT
           fi
 
@@ -51,8 +53,22 @@ jobs:
           out.push('Tải **MonCam-Setup-'+w.version+'.exe** bên dưới để cài. Bản đã cài sẽ tự báo khi có bản mới.');
           require('fs').writeFileSync('build/release-notes.md',out.join('\n'));"
 
-      - name: Build & publish
+      - name: Build
         if: steps.ver.outputs.skip != 'true'
+        run: npx electron-builder --win --x64 --publish never
+
+      - name: Publish GitHub Release
+        if: steps.ver.outputs.skip != 'true'
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --x64 --publish always
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          FILES="dist/MonCam-Setup-$V.exe dist/MonCam-Setup-$V.exe.blockmap dist/latest.yml"
+          ls -la $FILES
+          if gh release view "v$V" >/dev/null 2>&1; then
+            gh release upload "v$V" $FILES --clobber
+            gh release edit "v$V" --title "Mon Cam v$V" --notes-file build/release-notes.md --draft=false --latest
+          else
+            gh release create "v$V" $FILES --target "$GITHUB_SHA" --title "Mon Cam v$V" --notes-file build/release-notes.md --latest
+          fi
