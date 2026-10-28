@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon Cam</title>
+<style>
+:root{
+  --chrome:#1F2126;--panel:#26292F;--line:#363A42;--hover:#2F333A;--stage:#2B2D31;
+  --text:#E8E9EC;--muted:#8D929C;--red:#E5383B;--warn:#F2B84B;--selected-bg:#3A2426;
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);--t-fast:.12s;--t-med:.22s;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#111215;color:var(--text);font:13px/1.4 "Segoe UI",system-ui,sans-serif}
+button,select,input{font:inherit;color:inherit}
+button,select,input,.chip,.rec-item{transition:background-color var(--t-fast) ease,border-color var(--t-fast) ease,color var(--t-fast) ease,box-shadow var(--t-med) var(--ease-out),transform var(--t-med) var(--ease-out),opacity var(--t-fast) ease}
+button:not(:disabled):active{transform:scale(.95);transition-duration:.06s}
+:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+
+/* ---- trang preview ---- */
+.pv-top{max-width:1180px;margin:0 auto;padding:20px 16px 8px}
+.pv-top h1{font-size:18px;margin:0 0 4px}
+.pv-top p{margin:0;color:var(--muted)}
+.pv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;position:relative}
+.pv-tab{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+.pv-tab:hover{border-color:var(--red);transform:translateY(-1px)}
+.pv-tab.on{background:var(--selected-bg);border-color:var(--red)}
+.pv-wrap{max-width:1180px;margin:0 auto;padding:12px 16px 40px;overflow-x:auto}
+.screen{display:none}
+.screen.on{display:block;animation:rise .45s var(--ease-out)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.note{color:var(--muted);margin:10px 2px 0;max-width:900px}
+.note b{color:var(--text)}
+
+/* ---- cửa sổ app ---- */
+.win{width:1100px;height:660px;background:var(--chrome);border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px #000;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.top{display:flex;align-items:center;gap:16px;padding:10px 150px 10px 14px;border-bottom:1px solid var(--line);min-height:58px;position:relative}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:34px;height:34px}
+.brand-name{font-size:17px;font-weight:700;line-height:34px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.brand-name .m{color:var(--red)}.brand-name .a{color:#fff}
+.latest{font-size:10.5px;font-weight:800;color:#2EB872;background:#2eb87224;padding:1px 7px;border-radius:20px;line-height:16px}
+.tools{display:flex;gap:8px;margin-left:auto;align-items:center}
+.wbtns{position:absolute;right:0;top:0;height:58px;display:flex}
+.wbtns span{width:46px;display:grid;place-items:center;color:#fff;opacity:.85}
+.wbtns span:hover{background:var(--hover)}
+.wbtns span.x:hover{background:#C42B1C}
+.ibtn{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;padding:0}
+.ibtn:hover{border-color:var(--red);transform:translateY(-1px)}
+.ibtn svg{width:16px;height:16px}
+.upd{color:#2EB872}
+.btn{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--red);transform:translateY(-1px)}
+.btn svg{width:15px;height:15px}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.btn.pri:hover{background:#F04447;box-shadow:0 6px 16px rgba(229,56,59,.35)}
+.body{flex:1;display:flex;min-height:0}
+.side{width:262px;background:var(--panel);border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.grp h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.seg{display:flex;background:var(--chrome);border:1px solid var(--line);border-radius:6px;padding:2px;gap:2px}
+.seg button{flex:1;height:28px;border:0;border-radius:4px;background:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px}
+.seg button svg{width:14px;height:14px}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--selected-bg);color:#fff;box-shadow:inset 0 0 0 1px var(--red)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.row .lbl{display:flex;align-items:center;gap:8px}
+.row .lbl svg{width:15px;height:15px;color:var(--muted)}
+.sw{width:34px;height:20px;border-radius:20px;background:#474C55;position:relative;cursor:pointer;flex:0 0 auto}
+.sw::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform var(--t-med) var(--ease-spring)}
+.sw.on{background:var(--red)}.sw.on::after{transform:translateX(14px)}
+.sel{width:100%;height:30px;border-radius:6px;background:var(--chrome);border:1px solid var(--line);padding:0 8px;display:flex;align-items:center;justify-content:space-between;color:var(--text)}
+.sel:hover{border-color:#4a4f58}
+.hint{font-size:11.5px;color:var(--muted);margin-top:6px}
+kbd{font:11px/1 "Segoe UI",sans-serif;background:var(--chrome);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 5px;color:var(--text)}
+.main{flex:1;background:var(--stage);display:flex;flex-direction:column;min-width:0}
+.hero{flex:1;display:grid;place-items:center;padding:20px}
+.cards{display:grid;grid-template-columns:repeat(3,190px);gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.card:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.card .ic{width:40px;height:40px;border-radius:8px;background:var(--chrome);display:grid;place-items:center;color:var(--red)}
+.card .ic svg{width:22px;height:22px}
+.card b{font-size:14px}
+.card span{color:var(--muted);font-size:12px}
+.card.on{border-color:var(--red);background:var(--selected-bg)}
+.recbig{margin-top:22px;display:flex;align-items:center;gap:14px;justify-content:center}
+.recbtn{height:46px;padding:0 26px;border-radius:24px;background:var(--red);border:0;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.recbtn:hover{background:#F04447;box-shadow:0 8px 22px rgba(229,56,59,.4);transform:translateY(-1px)}
+.recbtn i{width:12px;height:12px;border-radius:50%;background:#fff}
+.sumline{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+.sumline b{color:var(--text);font-weight:600}
+.recent{border-top:1px solid var(--line);padding:10px 14px 12px;background:var(--chrome)}
+.recent h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between}
+.recent h4 a{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer}
+.reclist{display:flex;gap:10px}
+.rec-item{width:170px;background:var(--panel);border-radius:6px;overflow:hidden;cursor:pointer;border:1px solid var(--line)}
+.rec-item:hover{border-color:var(--red);transform:translateY(-2px)}
+.thumb{height:84px;background:linear-gradient(135deg,#3a3f4a,#23262c);position:relative}
+.thumb .dur{position:absolute;right:5px;bottom:5px;background:rgba(0,0,0,.7);border-radius:3px;padding:0 4px;font-size:10.5px;font-variant-numeric:tabular-nums}
+.thumb .fmt{position:absolute;left:5px;top:5px;background:var(--red);border-radius:3px;padding:0 5px;font-size:10px;font-weight:700}
+.thumb .fmt.gif{background:#7B5CFF}
+.rec-item .meta{padding:6px 8px;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.foot{display:flex;align-items:center;gap:16px;padding:8px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+.foot .sp{flex:1}
+.credit{color:#6B707A;font-size:11px;white-space:nowrap}
+
+/* ---- màn chọn vùng ---- */
+.desk{width:1100px;height:660px;border-radius:8px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  background:linear-gradient(160deg,#2d4a6b 0%,#1e2c44 55%,#3a2a4a 100%)}
+.fakewin{position:absolute;left:150px;top:90px;width:700px;height:430px;background:#e9ebef;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.fakewin::before{content:'';display:block;height:30px;background:#d4d7dd;border-radius:6px 6px 0 0}
+.fakewin .blk{position:absolute;background:#c7ccd5;border-radius:4px}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.5);
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 0,230px 140px,230px 470px,790px 470px,790px 140px,230px 140px)}
+.selbox{position:absolute;left:230px;top:140px;width:560px;height:330px;border:2px dashed var(--red);box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.selbox .h{position:absolute;width:10px;height:10px;background:#fff;border:2px solid var(--red);border-radius:2px}
+.h.tl{left:-6px;top:-6px}.h.tr{right:-6px;top:-6px}.h.bl{left:-6px;bottom:-6px}.h.br{right:-6px;bottom:-6px}
+.h.t{left:calc(50% - 5px);top:-6px}.h.b{left:calc(50% - 5px);bottom:-6px}.h.l{left:-6px;top:calc(50% - 5px)}.h.r{right:-6px;top:calc(50% - 5px)}
+.sizetag{position:absolute;left:230px;top:112px;background:var(--red);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:5px;font-variant-numeric:tabular-nums}
+.xhair{position:absolute;left:790px;top:470px;width:22px;height:22px;transform:translate(-11px,-11px)}
+.xhair::before,.xhair::after{content:'';position:absolute;background:#fff;box-shadow:0 0 0 1px #000}
+.xhair::before{left:10px;top:0;width:2px;height:22px}.xhair::after{top:10px;left:0;height:2px;width:22px}
+.loupe{position:absolute;left:810px;top:490px;width:96px;height:96px;border-radius:8px;border:2px solid #fff;overflow:hidden;background:#c7ccd5;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.loupe::before,.loupe::after{content:'';position:absolute;background:var(--red)}
+.loupe::before{left:47px;top:0;width:2px;height:100%}.loupe::after{top:47px;left:0;height:2px;width:100%}
+.loupe span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);color:#fff;font-size:10px;text-align:center;font-variant-numeric:tabular-nums}
+.selbar{position:absolute;left:230px;top:482px;display:flex;gap:6px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.selbar .div{width:1px;background:var(--line);margin:2px 2px}
+.selhint{position:absolute;left:50%;top:18px;transform:translateX(-50%);background:rgba(31,33,38,.92);border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--text);white-space:nowrap}
+.selhint kbd{margin:0 2px}
+
+/* ---- màn đang quay ---- */
+.recframe{position:absolute;left:230px;top:140px;width:560px;height:330px;border:2px solid var(--red);box-shadow:0 0 0 3px rgba(229,56,59,.25);animation:blinkb 1.6s ease-in-out infinite}
+@keyframes blinkb{50%{box-shadow:0 0 0 3px rgba(229,56,59,.05)}}
+.recbar{position:absolute;left:230px;top:100px;display:flex;align-items:center;gap:6px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:5px 6px 5px 10px;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--red);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.timer{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;min-width:74px}
+.recbar .info{color:var(--muted);font-size:11.5px;padding:0 6px;border-left:1px solid var(--line);font-variant-numeric:tabular-nums}
+.stopbtn{background:var(--red)!important;border-color:var(--red)!important;color:#fff}
+.stopbtn i{width:10px;height:10px;background:#fff;border-radius:2px;display:block}
+.cursor{position:absolute;left:520px;top:300px;width:18px}
+
+/* ---- màn xem lại & cắt ---- */
+.editor{flex:1;display:flex;flex-direction:column;background:var(--stage);min-height:0}
+.player{flex:1;display:grid;place-items:center;padding:18px;min-height:0}
+.video{width:600px;height:354px;border-radius:4px;background:linear-gradient(160deg,#2d4a6b,#1e2c44 60%,#3a2a4a);position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.video .fakewin{left:40px;top:30px;width:520px;height:290px}
+.ctrl{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--chrome);border-top:1px solid var(--line)}
+.tc{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);min-width:150px}
+.tc b{color:var(--text)}
+.ctrl .sp{flex:1}
+.timeline{padding:12px 14px 14px;background:var(--chrome)}
+.ruler{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums;margin:0 2px 4px}
+.track{position:relative;height:56px;border-radius:6px;overflow:hidden;background:#15161a;display:flex}
+.track .fr{flex:1;border-right:1px solid #15161a;background:linear-gradient(160deg,#3b5878,#25344e 60%,#47375a)}
+.track .fr:nth-child(odd){filter:brightness(1.1)}
+.cutL,.cutR{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.65)}
+.cutL{left:0;width:14%}.cutR{right:0;width:22%}
+.keep{position:absolute;top:0;bottom:0;left:14%;right:22%;border:2px solid var(--warn);border-radius:6px}
+.grip{position:absolute;top:-2px;bottom:-2px;width:12px;background:var(--warn);display:grid;place-items:center;cursor:ew-resize}
+.grip::after{content:'';width:2px;height:16px;background:rgba(0,0,0,.45);border-radius:2px}
+.grip.l{left:-8px;border-radius:5px 0 0 5px}.grip.r{right:-8px;border-radius:0 5px 5px 0}
+.playhead{position:absolute;top:-6px;bottom:-4px;left:41%;width:2px;background:var(--red);box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.playhead::before{content:'';position:absolute;top:-2px;left:-6px;border:7px solid transparent;border-top:9px solid var(--red)}
+.tlwrap{position:relative;padding-top:6px}
+.trimrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+.trimrow b{color:var(--warn);font-variant-numeric:tabular-nums;font-weight:600}
+.trimrow .sp{flex:1}
+.eside{width:262px;background:var(--panel);border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.kv span{color:var(--muted)}.kv b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--chrome);cursor:pointer;display:inline-flex;align-items:center}
+.chip:hover{border-color:var(--red);transform:translateY(-1px)}
+.chip.on{background:var(--selected-bg);border-color:var(--red)}
+.full{width:100%;justify-content:center}
+.stack{display:flex;flex-direction:column;gap:8px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(to right,var(--red) var(--fill,0%),#474C55 var(--fill,0%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:#fff;transition:transform var(--t-med) var(--ease-spring)}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow:0 0 0 4px rgba(229,56,59,.25)}
+
+/* dialog cài đặt */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center}
+.dlg{width:460px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:pop .32s var(--ease-spring)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.96)}}
+.dlg header{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+.dlg header .ibtn{margin-left:auto}
+.dlg .in{padding:14px;display:flex;flex-direction:column;gap:16px}
+.hk{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.path{display:flex;gap:6px}.path .sel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;line-height:28px}
+.verrow{display:flex;align-items:center;gap:8px}
+.verrow .v{flex:1;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-region" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/></symbol>
+    <symbol id="i-cursor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 3l7 17 2.5-7.5L21 10z"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-click" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 22v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8M3 16l2.6 2.4A9 9 0 0 0 20.5 15"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></symbol>
+    <symbol id="i-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-skipb" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></symbol>
+    <symbol id="i-skipf" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+    <!-- icon tạm, sẽ vẽ chính thức sau khi chốt layout -->
+    <symbol id="logo" viewBox="0 0 64 64"><defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FA8FF"/><stop offset="1" stop-color="#1747B8"/></linearGradient><radialGradient id="lg2" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FF7E80"/><stop offset="1" stop-color="#A3161A"/></radialGradient></defs><rect x="3" y="12" width="44" height="40" rx="9" fill="#0F2C73"/><rect x="3" y="9" width="44" height="40" rx="9" fill="url(#lg1)"/><path d="M47 22l14-8v34l-14-8z" fill="url(#lg1)"/><circle cx="25" cy="29" r="10" fill="url(#lg2)"/><ellipse cx="14" cy="15" rx="7" ry="3" fill="#fff" opacity=".35"/></symbol>
+  </defs>
+</svg>
+
+<div class="pv-top">
+  <h1>Mon Cam · bản phác layout</h1>
+  <p>Bấm các tab để xem từng màn. Chưa có chức năng thật, chỉ để chốt bố cục.</p>
+  <div class="pv-tabs" id="tabs">
+    <button class="pv-tab on" data-s="s1">1 · Màn chính</button>
+    <button class="pv-tab" data-s="s2">2 · Kéo chọn vùng</button>
+    <button class="pv-tab" data-s="s3">3 · Đang quay</button>
+    <button class="pv-tab" data-s="s4">4 · Xem lại & cắt</button>
+    <button class="pv-tab" data-s="s5">5 · Cài đặt</button>
+  </div>
+</div>
+
+<div class="pv-wrap">
+
+<!-- ============ 1. MÀN CHÍNH ============ -->
+<section class="screen on" id="s1">
+<div class="win">
+  <header class="top">
+    <div class="brand"><svg class="brand-icon"><use href="#logo"/></svg>
+      <div class="brand-name"><span><span class="m">Mon</span> <span class="a">Cam</span></span><span class="latest">latest</span></div></div>
+    <div class="tools">
+      <button class="btn"><svg><use href="#i-folder"/></svg>Mở thư mục</button>
+      <button class="ibtn" title="Cài đặt"><svg><use href="#i-gear"/></svg></button>
+      <button class="ibtn upd" title="Kiểm tra cập nhật · Đã là bản mới nhất"><svg><use href="#i-refresh"/></svg></button>
+    </div>
+    <div class="wbtns"><span>&#8212;</span><span>&#9744;</span><span class="x">&#10005;</span></div>
+  </header>
+  <div class="body">
+    <aside class="side">
+      <div class="grp"><h4>Định dạng</h4>
+        <div class="seg"><button class="on"><svg><use href="#i-film"/></svg>MP4</button><button>GIF</button></div>
+        <div class="hint">GIF: tự tắt âm thanh, nên quay đoạn ngắn.</div>
+      </div>
+      <div class="grp"><h4>Khung hình / giây</h4>
+        <div class="seg"><button>15</button><button class="on">30</button><button>60</button></div>
+      </div>
+      <div class="grp"><h4>Chất lượng</h4>
+        <div class="seg"><button>Nhẹ</button><button class="on">Vừa</button><button>Cao</button></div>
+      </div>
+      <div class="grp"><h4>Ghi kèm</h4>
+        <div class="row"><span class="lbl"><svg><use href="#i-cursor"/></svg>Con trỏ chuột</span><span class="sw on"></span></div>
+        <div class="row"><span class="lbl"><svg><use href="#i-click"/></svg>Hiệu ứng click</span><span class="sw"></span></div>
+        <div class="row"><span class="lbl"><svg><use href="#i-vol"/></svg>Âm thanh máy</span><span class="sw on"></span></div>
+      </div>
+      <div class="grp"><h4>Phím tắt</h4>
+        <div class="row"><span>Bắt đầu / Dừng</span><kbd>F12</kbd></div>
+        <div class="row"><span>Tạm dừng</span><kbd>Shift+F12</kbd></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="hero"><div>
+        <div class="cards">
+          <div class="card on"><div class="ic"><svg><use href="#i-region"/></svg></div><b>Chọn vùng</b><span>Kéo chuột chọn khu vực cần quay</span></div>
+          <div class="card"><div class="ic"><svg><use href="#i-monitor"/></svg></div><b>Toàn màn hình</b><span>Quay cả màn hình (chọn màn nếu có 2)</span></div>
+          <div class="card"><div class="ic"><svg><use href="#i-window"/></svg></div><b>Một cửa sổ</b><span>Bấm vào cửa sổ app cần quay</span></div>
+        </div>
+        <div class="recbig"><button class="recbtn"><i></i>Chọn vùng & quay</button></div>
+        <div class="sumline"><b>MP4</b> · 30 fps · có chuột · có âm thanh máy &nbsp;·&nbsp; <kbd>F12</kbd> để quay vùng gần nhất (1280×720)</div>
+      </div></div>
+      <div class="recent">
+        <h4>Vừa quay <a>Xem tất cả</a></h4>
+        <div class="reclist">
+          <div class="rec-item"><div class="thumb"><span class="fmt">MP4</span><span class="dur">00:42</span></div><div class="meta">MonCam_2026-10-28_09-12.mp4</div></div>
+          <div class="rec-item"><div class="thumb"><span class="fmt gif">GIF</span><span class="dur">00:06</span></div><div class="meta">MonCam_2026-10-28_08-55.gif</div></div>
+          <div class="rec-item"><div class="thumb"><span class="fmt">MP4</span><span class="dur">03:17</span></div><div class="meta">MonCam_2026-10-27_17-40.mp4</div></div>
+          <div class="rec-item"><div class="thumb"><span class="fmt">MP4</span><span class="dur">00:15</span></div><div class="meta">MonCam_2026-10-27_16-02.mp4</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="foot"><span>Ổ D: còn 214 GB · lưu tại D:\Videos\Mon Cam</span><span class="sp"></span><span class="credit">Created by Mondiro</span></footer>
+</div>
+<p class="note"><b>Màn chính:</b> cột trái là cài đặt quay (MP4/GIF, 30/60 fps, chuột, âm thanh máy). Giữa chọn kiểu quay; nút đỏ to để bắt đầu. Dưới cùng là các clip vừa quay — bấm vào là mở màn <b>Xem lại & cắt</b>.</p>
+</section>
+
+<!-- ============ 2. CHỌN VÙNG ============ -->
+<section class="screen" id="s2">
+<div class="desk">
+  <div class="fakewin"><div class="blk" style="left:20px;top:50px;width:160px;height:350px"></div><div class="blk" style="left:200px;top:50px;width:480px;height:200px"></div><div class="blk" style="left:200px;top:270px;width:230px;height:130px"></div><div class="blk" style="left:450px;top:270px;width:230px;height:130px"></div></div>
+  <div class="dim"></div>
+  <div class="sizetag">560 × 330</div>
+  <div class="selbox"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i><i class="h t"></i><i class="h b"></i><i class="h l"></i><i class="h r"></i></div>
+  <div class="xhair"></div>
+  <div class="loupe"><span>790, 470</span></div>
+  <div class="selbar">
+    <button class="btn pri"><svg><use href="#i-play"/></svg>Quay <kbd style="background:rgba(0,0,0,.2);border-color:rgba(0,0,0,.2);color:#fff">Enter</kbd></button>
+    <span class="div"></span>
+    <button class="chip">1280×720</button><button class="chip">1920×1080</button><button class="chip">Vuông</button>
+    <span class="div"></span>
+    <button class="ibtn" title="Ẩn/hiện chuột"><svg><use href="#i-cursor"/></svg></button>
+    <button class="ibtn" title="Âm thanh máy"><svg><use href="#i-vol"/></svg></button>
+    <button class="ibtn" title="Huỷ (Esc)"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <div class="selhint">Kéo để chọn vùng · Bấm vào cửa sổ để bắt trọn cửa sổ · <kbd>Enter</kbd> quay · <kbd>Esc</kbd> huỷ</div>
+</div>
+<p class="note"><b>Kéo chọn vùng:</b> toàn màn hình tối đi, vùng chọn sáng với khung đỏ nét đứt và 8 nút kéo để chỉnh. Góc trên hiện kích thước, có kính lúp để căn chính xác từng pixel. Thanh nhỏ bên dưới vùng chọn: nút Quay, kích thước có sẵn, bật/tắt chuột và âm thanh.</p>
+</section>
+
+<!-- ============ 3. ĐANG QUAY ============ -->
+<section class="screen" id="s3">
+<div class="desk">
+  <div class="fakewin"><div class="blk" style="left:20px;top:50px;width:160px;height:350px"></div><div class="blk" style="left:200px;top:50px;width:480px;height:200px"></div><div class="blk" style="left:200px;top:270px;width:230px;height:130px"></div><div class="blk" style="left:450px;top:270px;width:230px;height:130px"></div></div>
+  <div class="recframe"></div>
+  <svg class="cursor" viewBox="0 0 24 24"><path d="M4 3l7 17 2.5-7.5L21 10z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/></svg>
+  <div class="recbar">
+    <span class="recdot"></span><span class="timer">00:01:24</span>
+    <span class="info">MP4 · 30 fps · 38.2 MB</span>
+    <button class="ibtn" title="Tạm dừng (Shift+F12)"><svg><use href="#i-pause"/></svg></button>
+    <button class="ibtn stopbtn" title="Dừng (F12)"><i></i></button>
+    <button class="ibtn" title="Huỷ bản quay"><svg><use href="#i-trash"/></svg></button>
+  </div>
+</div>
+<p class="note"><b>Đang quay:</b> cửa sổ Mon Cam tự thu nhỏ. Chỉ còn khung đỏ quanh vùng quay (không bị ghi vào video) và 1 thanh mini: đèn đỏ nhấp nháy, thời gian, dung lượng, nút Tạm dừng / Dừng / Huỷ. Dừng xong tự mở màn <b>Xem lại & cắt</b>.</p>
+</section>
+
+<!-- ============ 4. XEM LẠI & CẮT ============ -->
+<section class="screen" id="s4">
+<div class="win">
+  <header class="top">
+    <div class="brand"><svg class="brand-icon"><use href="#logo"/></svg>
+      <div class="brand-name"><span><span class="m">Mon</span> <span class="a">Cam</span></span><span class="latest">latest</span></div></div>
+    <button class="btn" style="margin-left:6px"><svg><use href="#i-back"/></svg>Quay mới</button>
+    <div class="tools">
+      <button class="ibtn" title="Cài đặt"><svg><use href="#i-gear"/></svg></button>
+      <button class="ibtn upd" title="Kiểm tra cập nhật"><svg><use href="#i-refresh"/></svg></button>
+    </div>
+    <div class="wbtns"><span>&#8212;</span><span>&#9744;</span><span class="x">&#10005;</span></div>
+  </header>
+  <div class="body">
+    <div class="editor">
+      <div class="player"><div class="video"><div class="fakewin"><div class="blk" style="left:16px;top:44px;width:120px;height:230px"></div><div class="blk" style="left:150px;top:44px;width:350px;height:130px"></div><div class="blk" style="left:150px;top:186px;width:350px;height:90px"></div></div></div></div>
+      <div class="ctrl">
+        <button class="ibtn" title="Về điểm đầu đoạn cắt"><svg><use href="#i-skipb"/></svg></button>
+        <button class="ibtn" title="Phát / Dừng (Space)" style="width:38px;height:38px;background:var(--red);border-color:var(--red);color:#fff"><svg><use href="#i-play"/></svg></button>
+        <button class="ibtn" title="Tới điểm cuối đoạn cắt"><svg><use href="#i-skipf"/></svg></button>
+        <span class="tc"><b>00:17.20</b> / 00:42.00</span>
+        <span class="sp"></span>
+        <button class="btn" title="Đặt điểm đầu tại playhead (I)">[ Đầu <kbd>I</kbd></button>
+        <button class="btn" title="Đặt điểm cuối tại playhead (O)">Cuối ] <kbd>O</kbd></button>
+        <span class="lbl" style="display:flex;align-items:center;gap:6px;color:var(--muted);margin-left:8px"><svg style="width:15px;height:15px"><use href="#i-vol"/></svg><input type="range" value="70" style="width:80px"></span>
+      </div>
+      <div class="timeline">
+        <div class="ruler"><span>0:00</span><span>0:05</span><span>0:10</span><span>0:15</span><span>0:20</span><span>0:25</span><span>0:30</span><span>0:35</span><span>0:42</span></div>
+        <div class="tlwrap">
+          <div class="track"><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i><i class="fr"></i></div>
+          <div class="cutL"></div><div class="cutR"></div>
+          <div class="keep"><span class="grip l"></span><span class="grip r"></span></div>
+          <div class="playhead"></div>
+        </div>
+        <div class="trimrow"><svg style="width:15px;height:15px"><use href="#i-scissors"/></svg>Giữ đoạn <b>00:05.88 → 00:32.76</b> (26.9 giây) <span class="sp"></span> Kéo 2 tay cầm vàng để cắt · kéo vạch đỏ để tua · <kbd>←</kbd><kbd>→</kbd> từng khung</div>
+      </div>
+    </div>
+    <aside class="eside">
+      <div class="grp"><h4>Thông tin</h4>
+        <div class="kv"><span>Tên</span><b>MonCam_..._09-12</b><span>Kích thước</span><b>1280 × 720</b><span>FPS</span><b>30</b><span>Dung lượng</span><b>18.4 MB</b></div>
+      </div>
+      <div class="grp"><h4>Lưu bản cắt</h4>
+        <div class="stack">
+          <button class="btn pri full"><svg><use href="#i-save"/></svg>Lưu MP4 đã cắt</button>
+          <div class="row" style="padding:0"><span style="color:var(--muted)">Ghi đè file gốc</span><span class="sw"></span></div>
+        </div>
+      </div>
+      <div class="grp"><h4>Xuất GIF</h4>
+        <div class="chips" style="margin-bottom:8px"><span class="chip">10 fps</span><span class="chip on">15 fps</span><span class="chip">24 fps</span></div>
+        <div class="chips" style="margin-bottom:10px"><span class="chip">50%</span><span class="chip on">75%</span><span class="chip">100%</span></div>
+        <button class="btn full"><svg><use href="#i-film"/></svg>Xuất GIF (~6.1 MB)</button>
+      </div>
+      <div style="margin-top:auto" class="stack">
+        <button class="btn full"><svg><use href="#i-folder"/></svg>Mở trong thư mục</button>
+        <button class="btn full" style="color:#ff8a8c"><svg><use href="#i-trash"/></svg>Xoá clip này</button>
+      </div>
+    </aside>
+  </div>
+  <footer class="foot"><span>Cắt nhanh không render lại · xong trong vài giây</span><span class="sp"></span><span class="credit">Created by Mondiro</span></footer>
+</div>
+<p class="note"><b>Xem lại & cắt:</b> phát video vừa quay. Thanh timeline có ảnh thu nhỏ; <b>vạch đỏ</b> là playhead để kéo tua; <b>2 tay cầm vàng</b> để cắt bỏ đầu/cuối (phần bị bỏ tối đi). Cột phải: lưu MP4 đã cắt, hoặc xuất ngay đoạn đó ra GIF với fps/kích thước tuỳ chọn.</p>
+</section>
+
+<!-- ============ 5. CÀI ĐẶT ============ -->
+<section class="screen" id="s5">
+<div class="win">
+  <header class="top">
+    <div class="brand"><svg class="brand-icon"><use href="#logo"/></svg>
+      <div class="brand-name"><span><span class="m">Mon</span> <span class="a">Cam</span></span><span class="latest">latest</span></div></div>
+    <div class="tools"><button class="ibtn"><svg><use href="#i-gear"/></svg></button><button class="ibtn upd"><svg><use href="#i-refresh"/></svg></button></div>
+    <div class="wbtns"><span>&#8212;</span><span>&#9744;</span><span class="x">&#10005;</span></div>
+  </header>
+  <div class="body" style="background:var(--stage)"></div>
+  <footer class="foot"><span class="sp"></span><span class="credit">Created by Mondiro</span></footer>
+  <div class="scrim"><div class="dlg">
+    <header>Cài đặt <button class="ibtn" title="Đóng (Esc)"><svg><use href="#i-x"/></svg></button></header>
+    <div class="in">
+      <div class="grp"><h4>Thư mục lưu</h4>
+        <div class="path"><span class="sel">D:\Videos\Mon Cam</span><button class="btn">Đổi…</button></div></div>
+      <div class="grp"><h4>Phím tắt</h4>
+        <div class="hk"><span>Bắt đầu / Dừng quay</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd></div></div>
+      <div class="grp"><h4>Khác</h4>
+        <div class="row"><span>Đếm ngược 3 giây trước khi quay</span><span class="sw on"></span></div>
+        <div class="row"><span>Ẩn Mon Cam khi đang quay</span><span class="sw on"></span></div>
+        <div class="row"><span>Tự mở màn Xem lại sau khi dừng</span><span class="sw on"></span></div>
+      </div>
+      <div class="grp"><h4>Phiên bản</h4>
+        <div class="verrow"><span class="v">v1.0.0 · Đã là bản mới nhất</span><button class="btn"><svg><use href="#i-sparkles"/></svg>What's new</button><button class="ibtn upd"><svg><use href="#i-refresh"/></svg></button></div></div>
+    </div>
+  </div></div>
+</div>
+<p class="note"><b>Cài đặt:</b> thư mục lưu, phím tắt, đếm ngược, phiên bản + What's new + kiểm tra cập nhật.</p>
+</section>
+
+</div>
+<script>
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.pv-tab');if(!b)return;
+  document.querySelectorAll('.pv-tab').forEach(t=>t.classList.toggle('on',t===b));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===b.dataset.s));
+});
+document.querySelectorAll('.seg').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))}));
+document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
+document.querySelectorAll('.cards').forEach(g=>g.addEventListener('click',e=>{const c=e.target.closest('.card');if(!c)return;g.querySelectorAll('.card').forEach(x=>x.classList.toggle('on',x===c))}));
+(function tick(){document.querySelectorAll('input[type=range]').forEach(r=>r.style.setProperty('--fill',r.value+'%'));requestAnimationFrame(tick)})();
+</script>
+</body>
+</html>
