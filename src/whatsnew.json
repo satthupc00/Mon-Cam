@@ -1,15 +1,15 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "date": "2026-10-28",
   "new": [
-    "Quay màn hình theo vùng kéo chọn, toàn màn hình hoặc 1 cửa sổ",
-    "Xuất MP4 15/30/60 fps hoặc ảnh động GIF",
-    "Bật/tắt quay con trỏ chuột, hiệu ứng click và âm thanh máy",
-    "Tạm dừng và tiếp tục khi đang quay (Shift+F12)",
-    "Màn Xem lại & cắt: tua bằng vạch đỏ, cắt đầu/cuối, lưu MP4 hoặc xuất GIF",
-    "Phím tắt F12 bắt đầu/dừng, Ctrl+Shift+R chọn vùng mới",
-    "Tự kiểm tra và cài bản cập nhật mới"
+    "Khi chọn vùng, vùng lần trước được hiện sẵn: nhấn Enter là quay luôn, có nút \"Vùng trước\" để lấy lại"
   ],
-  "improved": [],
-  "fixed": []
+  "improved": [
+    "Màn chính gọn hơn: cửa sổ app nhỏ lại, các tuỳ chọn định dạng / fps / chuột / âm thanh chuyển vào Cài đặt",
+    "Cửa sổ tự nở rộng khi mở màn Xem lại & cắt, quay về thì thu gọn lại",
+    "Timeline: thêm dải thước phía trên để bấm hoặc kéo vạch đỏ dễ hơn, đầu vạch đỏ to hơn"
+  ],
+  "fixed": [
+    "Quay một cửa sổ (trình duyệt, app dùng card đồ hoạ) không còn bị ra màu trắng"
+  ]
 }

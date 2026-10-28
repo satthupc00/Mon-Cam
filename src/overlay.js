@@ -9,6 +9,11 @@ let img = null;
 api.on('sel:init', c => {
   cfg = c;
   if (c.img) { shot.src = c.img; img = new Image(); img.src = c.img; }
+  if (c.last) {
+    sel = norm({ x: c.last.x, y: c.last.y, w: c.last.w, h: c.last.h });
+    $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
+  }
+  $('pLast').hidden = !c.last;
   sizeCanvas(); syncToggles(); draw();
   if (!c.cursorHere) $('hint').style.opacity = 0;
 });
@@ -66,6 +71,7 @@ function placeBar() {
 }
 
 function preset(p) {
+  if (p === 'last') { if (cfg.last) { sel = norm({ ...cfg.last }); draw(); } return; }
   let w, h;
   if (p === 'square') { const s = sel ? Math.min(sel.w, sel.h) : Math.min(innerWidth, innerHeight) * .6; w = h = s; }
   else { const [pw, ph] = p.split('x').map(Number); w = pw / cfg.scale; h = ph / cfg.scale; }
@@ -115,8 +121,10 @@ addEventListener('pointermove', e => {
 addEventListener('pointerup', e => {
   if (!drag) return;
   const wasNew = drag.mode === 'new', moved = Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy);
+  const orig = drag.orig;
   drag = null;
   if (wasNew && moved < 5) { confirm(true); return; }   // bấm 1 lần = cả màn hình
+  if (!wasNew && orig && (!sel || sel.w < 8 || sel.h < 8)) sel = orig;   // kéo teo về 0 thì trả lại vùng cũ
   draw();
 });
 addEventListener('dblclick', e => { if (sel && e.target === selEl) confirm(); });

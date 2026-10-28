@@ -78,7 +78,7 @@ function renderSum() {
   if (!gif) parts.push(S.audio ? 'có âm thanh máy' : 'không tiếng');
   if (S.countdown) parts.push('đếm ngược 3s');
   let last = '';
-  if (S.lastRegion && S.lastRegion.phys) last = ` &nbsp;·&nbsp; <kbd>F12</kbd> quay lại vùng gần nhất (${S.lastRegion.phys.w}×${S.lastRegion.phys.h})`;
+  if (S.lastRegion && S.lastRegion.phys) last = `<br><kbd>F12</kbd> quay lại vùng trước (${S.lastRegion.phys.w}×${S.lastRegion.phys.h})`;
   $('sum').innerHTML = parts.join(' · ') + last;
 }
 
@@ -88,6 +88,7 @@ function startRec() {
   api.invoke('rec:start', mode);
 }
 $('recBtn').onclick = startRec;
+$('sum').onclick = () => openDlg('dlgSettings');
 
 api.on('rec:state', s => { recState = s; renderRecBtn(); });
 
@@ -103,7 +104,7 @@ async function openWindowPicker() {
     b.className = 'witem'; b.title = w.title;
     b.innerHTML = `<div class="wi"></div><span>${esc(w.title)}</span>`;
     if (w.img) b.querySelector('.wi').style.backgroundImage = `url("${w.img}")`;
-    b.onclick = () => { closeDlg('dlgWindows'); api.invoke('rec:start', 'window', { title: w.title }); };
+    b.onclick = () => { closeDlg('dlgWindows'); api.invoke('rec:start', 'window', { id: w.id, title: w.title }); };
     g.appendChild(b);
   });
 }
@@ -151,6 +152,7 @@ function showView(v) {
   $('editor').hidden = v !== 'editor';
   $('backBtn').hidden = v !== 'editor';
   $('openDir').hidden = v === 'editor';
+  api.invoke('win:layout', v).catch(() => {});
   if (v === 'home') { vid.pause(); vid.removeAttribute('src'); vid.load(); cur = null; loadRecent(); }
   refreshFoot();
 }
@@ -256,7 +258,7 @@ tl.addEventListener('pointerdown', e => {
   const g = e.target.id === 'gripL' ? 'in' : e.target.id === 'gripR' ? 'out' : 'seek';
   tlDrag = g;
   if (g !== 'seek') e.target.classList.add('drag');
-  else { vid.pause(); vid.currentTime = timeAt(e.clientX); }
+  else { tl.classList.add('scrub'); vid.pause(); vid.currentTime = timeAt(e.clientX); }
   tl.setPointerCapture(e.pointerId);
 });
 tl.addEventListener('pointermove', e => {
@@ -266,7 +268,7 @@ tl.addEventListener('pointermove', e => {
   else if (tlDrag === 'out') { outT = Math.max(t, inT + 0.1); vid.currentTime = outT; renderTrim(); }
   else vid.currentTime = t;
 });
-tl.addEventListener('pointerup', () => { tlDrag = null; document.querySelectorAll('.grip.drag').forEach(g => g.classList.remove('drag')); });
+tl.addEventListener('pointerup', () => { tlDrag = null; tl.classList.remove('scrub'); document.querySelectorAll('.grip.drag').forEach(g => g.classList.remove('drag')); });
 
 // GIF
 function chipGroup(id, key) {

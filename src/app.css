@@ -183,3 +183,31 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .scrim.closing .dlg{animation:dlgOut .16s var(--ease-out) forwards}
 @keyframes fadeOut{to{opacity:0}}
 @keyframes dlgOut{to{opacity:0;transform:translateY(6px) scale(.97)}}
+
+/* ===== v1.1: màn chính gọn 1 cột ===== */
+.home{flex-direction:column;background:var(--stage)}
+.home .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:18px 16px;min-height:0}
+.home .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:520px}
+.home .card{align-items:center;justify-content:center;text-align:center;gap:8px;padding:14px 8px;min-height:92px}
+.home .card b{font-size:13px;white-space:nowrap}
+.home .card .ic{width:38px;height:38px}
+.home .recbtn{margin-top:4px}
+.sumline{background:none;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--muted);font-size:12px;line-height:1.7;text-align:center;max-width:100%}
+.sumline:hover{color:var(--text);background:var(--hover)}
+.sumline kbd{margin:0 2px}
+.home .recent{flex:0 0 auto}
+.dlg .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dlg .row .lbl svg{width:15px;height:15px;color:var(--muted)}
+
+/* ===== timeline: dải thước trên cùng cũng bấm/kéo để tua ===== */
+.tlwrap{padding-top:28px}
+.ruler{position:absolute;top:0;left:0;right:0;height:24px;margin:0;border-radius:5px;background:rgba(255,255,255,.035);cursor:pointer;transition:background-color var(--t-fast) ease}
+.tlwrap:hover .ruler{background:rgba(255,255,255,.07)}
+.ruler span{top:5px;pointer-events:none}
+.ruler span:first-child{left:6px!important}
+.ruler span:last-child{left:auto!important;right:6px;transform:none}
+.cutL,.cutR,.keep{top:28px}
+.playhead{top:0;bottom:-4px;width:2px}
+.playhead::before{top:0;left:-8px;width:18px;height:20px;border:0;background:var(--red);border-radius:4px 4px 9px 9px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.tlwrap.scrub .playhead::before{transform:scale(1.15)}
+.dlg .dfoot{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex:0 0 auto}

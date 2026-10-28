@@ -5,6 +5,7 @@ const { pathToFileURL } = require('url');
 const { Recorder } = require('./lib/recorder');
 const { run, probe } = require('./lib/ff');
 const { joinFiles, muxSegment } = require('./lib/compose');
+const { windowRect, hwndFromSourceId } = require('./lib/winrect');
 
 const APP_TITLE = 'Mon Cam';
 const HEADER_H = 58;
@@ -19,7 +20,7 @@ const DEFAULTS = {
   format: 'mp4', fps: 30, quality: 'medium', cursor: true, clickFx: false, audio: true,
   countdown: false, hideWhileRec: true, openEditorAfter: true,
   outDir: path.join(app.getPath('videos'), 'Mon Cam'),
-  gifFps: 15, gifScale: 75, lastRegion: null, winBounds: null,
+  gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
 try { settings = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(settingsFile, 'utf8')) }; } catch {}
@@ -38,11 +39,18 @@ const page = f => path.join(__dirname, 'src', f);
 let win = null;
 
 // ---------- Cửa sổ chính ----------
+// Màn chính gọn; khi mở màn Xem lại & cắt thì cửa sổ nở rộng ra, quay về thì thu lại
+const SIZES = {
+  home: { w: 620, h: 560, minW: 520, minH: 480, key: 'homeBounds' },
+  editor: { w: 1040, h: 700, minW: 860, minH: 580, key: 'edBounds' },
+};
+let layout = 'home';
 function createMain() {
-  const b = settings.winBounds || {};
+  const z = SIZES.home;
+  const b = settings.homeBounds || {};
   win = new BrowserWindow({
     title: APP_TITLE, backgroundColor: '#1F2126',
-    width: b.width || 1100, height: b.height || 700, x: b.x, y: b.y, minWidth: 900, minHeight: 600,
+    width: b.width || z.w, height: b.height || z.h, x: b.x, y: b.y, minWidth: z.minW, minHeight: z.minH,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#1F2126', symbolColor: '#FFFFFF', height: HEADER_H },
     autoHideMenuBar: true, show: false,
@@ -50,15 +58,33 @@ function createMain() {
     webPreferences: { preload, backgroundThrottling: false },
   });
   win.loadFile(page('index.html'));
-  win.once('ready-to-show', () => { if (b.maximized) win.maximize(); win.show(); });
+  win.once('ready-to-show', () => win.show());
   const keep = () => {
-    if (!win || win.isMinimized()) return;
-    settings.winBounds = { ...(win.isMaximized() ? settings.winBounds : win.getBounds()), maximized: win.isMaximized() };
+    if (!win || win.isMinimized() || win.isMaximized() || win._resizing) return;
+    settings[SIZES[layout].key] = win.getBounds();
     saveSettings();
   };
   win.on('resize', keep); win.on('move', keep);
   win.on('closed', () => { win = null; });
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+}
+function setLayout(mode) {
+  if (!win || !SIZES[mode] || mode === layout) return;
+  const old = win.getBounds();
+  layout = mode;
+  const z = SIZES[mode], saved = settings[z.key];
+  if (win.isMaximized()) return;
+  win._resizing = true;
+  win.setMinimumSize(Math.min(z.minW, old.width), Math.min(z.minH, old.height));
+  let w = saved ? saved.width : z.w, h = saved ? saved.height : z.h;
+  // giữ tâm cửa sổ, không cho tràn khỏi màn hình
+  const wa = screen.getDisplayMatching(old).workArea;
+  w = Math.min(w, wa.width); h = Math.min(h, wa.height);
+  let x = Math.round(old.x + (old.width - w) / 2), y = Math.round(old.y + (old.height - h) / 2);
+  x = Math.min(Math.max(x, wa.x), wa.x + wa.width - w); y = Math.min(Math.max(y, wa.y), wa.y + wa.height - h);
+  win.setBounds({ x, y, width: w, height: h }, true);
+  win.setMinimumSize(z.minW, z.minH);
+  setTimeout(() => { if (win) win._resizing = false; }, 400);
 }
 const send = (ch, data) => { if (win && !win.isDestroyed()) win.webContents.send(ch, data); };
 function showMain() { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
@@ -87,6 +113,14 @@ function toPhysical(rect) {
 }
 
 // ---------- Chọn vùng ----------
+// Vùng đã chọn lần trước (nếu nằm trên màn này) để hiện sẵn khi chọn vùng mới
+function lastRectOn(d) {
+  const l = settings.lastRegion && settings.lastRegion.dip;
+  if (!l) return null;
+  const b = d.bounds;
+  if (l.x < b.x || l.y < b.y || l.x + l.width > b.x + b.width || l.y + l.height > b.y + b.height) return null;
+  return { x: l.x - b.x, y: l.y - b.y, w: l.width, h: l.height };
+}
 let overlays = [];
 let selecting = null;
 async function startSelection() {
@@ -136,6 +170,7 @@ async function startSelection() {
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id,
+          last: lastRectOn(d),
         });
         o.show();
         if (screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id) o.focus();
@@ -389,9 +424,24 @@ async function startMode(mode, extra) {
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     return beginRecording({ dip: d.bounds, phys: toPhysical(d.bounds), full: true });
   }
-  if (mode === 'window' && extra && extra.title) {
-    return beginRecording({ title: extra.title, dip: null });
-  }
+  if (mode === 'window' && extra) return recordWindow(extra);
+}
+
+// Quay 1 cửa sổ = quay đúng khung của cửa sổ đó trên màn hình (chụp được cả trình duyệt,
+// app dùng card đồ hoạ — kiểu chụp thẳng cửa sổ qua GDI chỉ ra màu trắng)
+async function recordWindow(extra) {
+  const hwnd = hwndFromSourceId(extra.id);
+  if (!isWin || !hwnd) { notify('Chế độ quay cửa sổ chỉ chạy trên Windows', 'error'); return; }
+  let r;
+  try { r = await windowRect(hwnd); } catch (e) { notify('Không lấy được cửa sổ: ' + shortErr(e), 'error'); return; }
+  let dip = screen.screenToDipRect(null, r);
+  const d = screen.getDisplayMatching(dip).bounds;   // cắt phần nằm ngoài màn hình
+  const x1 = Math.max(dip.x, d.x), y1 = Math.max(dip.y, d.y);
+  const x2 = Math.min(dip.x + dip.width, d.x + d.width), y2 = Math.min(dip.y + dip.height, d.y + d.height);
+  if (x2 - x1 < 16 || y2 - y1 < 16) { notify('Cửa sổ này đang nằm ngoài màn hình', 'error'); return; }
+  dip = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+  const full = dip.width >= d.width - 2 && dip.height >= d.height - 2;
+  return beginRecording({ dip, phys: toPhysical(dip), full });
 }
 
 // ---------- Phím tắt ----------
@@ -441,6 +491,7 @@ function setupIpc() {
   ipcMain.handle('whatsnew', () => { try { return JSON.parse(fs.readFileSync(page('whatsnew.json'), 'utf8')); } catch { return null; } });
 
   ipcMain.handle('rec:start', (e, mode, extra) => { startMode(mode, extra); });
+  ipcMain.handle('win:layout', (e, mode) => setLayout(mode));
   ipcMain.handle('rec:pause', togglePause);
   ipcMain.handle('rec:stop', stopRecording);
   ipcMain.handle('rec:cancel', async () => { await abortRec(); showMain(); notify('Đã huỷ bản quay'); });
@@ -450,7 +501,7 @@ function setupIpc() {
     const own = new Set(BrowserWindow.getAllWindows().map(w => w.getMediaSourceId()));
     const list = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 320, height: 200 } });
     return list.filter(s => !own.has(s.id) && s.name && s.name !== APP_TITLE)
-      .map(s => ({ title: s.name, img: s.thumbnail.isEmpty() ? null : s.thumbnail.toDataURL() }));
+      .map(s => ({ id: s.id, title: s.name, img: s.thumbnail.isEmpty() ? null : s.thumbnail.toDataURL() }));
   });
 
   ipcMain.handle('files:list', async () => {
