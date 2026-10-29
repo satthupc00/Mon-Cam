@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon Cam</title>
+<style>
+:root{--chrome:#1F2126;--panel:#26292F;--line:#363A42;--hover:#2F333A;--stage:#2B2D31;--text:#E8E9EC;--muted:#8D929C;--red:#E5383B;--warn:#F2B84B;--selected-bg:#3A2426;--green:#2EB872;--ease-out:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box}
+html,body{margin:0;background:#111215;color:var(--text);font:13px/1.4 "Segoe UI",system-ui,sans-serif}
+button{font:inherit;color:inherit}
+kbd{font:11px/1 "Segoe UI",sans-serif;background:var(--chrome);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 5px}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.pv-top{max-width:1100px;margin:0 auto;padding:20px 16px 8px}
+.pv-top h1{font-size:18px;margin:0 0 4px}.pv-top p{margin:0;color:var(--muted)}
+.pv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.pv-tab{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+.pv-tab:hover{border-color:var(--red)}.pv-tab.on{background:var(--selected-bg);border-color:var(--red)}
+.pv-wrap{max-width:1100px;margin:0 auto;padding:12px 16px 40px;overflow-x:auto}
+.note{color:var(--muted);margin:12px 2px 0;max-width:900px}.note b{color:var(--text)}
+.ibtn{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;padding:0}
+.btn{height:32px;padding:0 11px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover,.ibtn:hover{border-color:var(--red)}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.btn.full{width:100%;justify-content:center}
+.btn:disabled{opacity:.4}
+
+.win{width:1040px;height:700px;background:var(--chrome);border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px #000;display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;align-items:center;gap:12px;padding:10px 150px 10px 14px;border-bottom:1px solid var(--line);min-height:58px;position:relative}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-size:17px;font-weight:700;line-height:34px;display:flex;gap:6px;align-items:center}
+.brand-name .m{color:var(--red)}.brand-name .a{color:#fff}
+.latest{font-size:10.5px;font-weight:800;color:var(--green);background:#2eb87224;padding:1px 7px;border-radius:20px;line-height:16px}
+.tools{display:flex;gap:8px;margin-left:auto}
+.wb{position:absolute;right:0;top:0;height:58px;display:flex}.wb span{width:46px;display:grid;place-items:center;opacity:.85}
+.body{flex:1;display:flex;min-height:0}
+.editor{flex:1;display:flex;flex-direction:column;background:var(--stage);min-width:0}
+.player{flex:1;display:grid;place-items:center;padding:16px;min-height:0}
+.video{width:520px;height:292px;border-radius:4px;background:linear-gradient(160deg,#2d4a6b,#1e2c44 60%,#3a2a4a);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.ctrl{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--chrome);border-top:1px solid var(--line)}
+.playb{width:38px;height:38px;background:var(--red);border-color:var(--red);color:#fff}
+.tc{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);min-width:140px}.tc b{color:var(--text)}
+.sp{flex:1}
+.segtools{display:flex;gap:6px}
+.timeline{padding:10px 14px 12px;background:var(--chrome)}
+.tl{position:relative;padding-top:28px}
+.ruler{position:absolute;top:0;left:0;right:0;height:24px;border-radius:5px;background:rgba(255,255,255,.05);color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}
+.ruler span{position:absolute;top:5px;transform:translateX(-50%)}
+.track{position:relative;height:64px}
+.seg{position:absolute;top:0;bottom:0;border-radius:6px;overflow:hidden;border:2px solid #4a4f58;background:#15161a;transition:left .22s var(--ease-out),width .22s var(--ease-out),transform .22s var(--ease-out)}
+.seg .film{position:absolute;inset:0;background:repeating-linear-gradient(90deg,#3b5878 0 46px,#2f4560 46px 47px,#47375a 47px 93px,#2f2f48 93px 94px)}
+.seg .lab{position:absolute;left:6px;top:4px;font-size:10.5px;font-weight:700;background:rgba(0,0,0,.6);border-radius:3px;padding:0 5px}
+.seg .dur{position:absolute;right:6px;bottom:4px;font-size:10.5px;background:rgba(0,0,0,.6);border-radius:3px;padding:0 5px;font-variant-numeric:tabular-nums}
+.seg.on{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn)}
+.seg .grip{position:absolute;top:0;bottom:0;width:10px;background:var(--warn);display:none;place-items:center}
+.seg .grip::after{content:'';width:2px;height:16px;background:rgba(0,0,0,.45);border-radius:2px}
+.seg.on .grip{display:grid}.grip.l{left:0}.grip.r{right:0}
+.seg.drag{transform:translateY(-6px) scale(1.03);box-shadow:0 10px 24px rgba(0,0,0,.5);border-color:var(--red);z-index:3;transition:none}
+.slot{position:absolute;top:0;bottom:0;border:2px dashed var(--red);border-radius:6px;background:rgba(229,56,59,.08)}
+.ph{position:absolute;top:-28px;bottom:-4px;width:2px;margin-left:-1px;background:var(--red);z-index:4}
+.ph::before{content:'';position:absolute;top:0;left:-8px;width:18px;height:20px;background:var(--red);border-radius:4px 4px 9px 9px}
+.cutmark{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;opacity:.9}
+.hintrow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)}
+.hintrow b{color:var(--warn);font-variant-numeric:tabular-nums}
+.eside{width:262px;background:var(--panel);border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:16px}
+.grp h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}.kv span{color:var(--muted)}.kv b{text-align:right;font-weight:600}
+.chips{display:flex;gap:6px;margin-bottom:8px}
+.chip{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--chrome);display:inline-flex;align-items:center}
+.chip.on{background:var(--selected-bg);border-color:var(--red)}
+.foot{display:flex;padding:8px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}.credit{margin-left:auto;color:#6B707A;font-size:11px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="cut" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></symbol>
+<symbol id="del" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+<symbol id="reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+<symbol id="film" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M21 2v6h-6M3 22v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8M3 16l2.6 2.4A9 9 0 0 0 20.5 15"/></symbol>
+</defs></svg>
+
+<div class="pv-top">
+  <h1>Mon Cam · phác layout cắt video nhiều đoạn</h1>
+  <p>Bấm các tab để xem từng bước. Chưa có chức năng thật.</p>
+  <div class="pv-tabs" id="tabs">
+    <button class="pv-tab on" data-s="1">1 · Cắt thành nhiều đoạn</button>
+    <button class="pv-tab" data-s="2">2 · Kéo đổi chỗ</button>
+    <button class="pv-tab" data-s="3">3 · Xoá đoạn → tự khít lại</button>
+  </div>
+</div>
+<div class="pv-wrap">
+<div class="win">
+  <header class="top">
+    <div class="brand"><img src="../src/icon.png" width="34" height="34" alt=""><div class="brand-name"><span><span class="m">Mon</span> <span class="a">Cam</span></span><span class="latest">latest</span></div></div>
+    <button class="btn"><svg class="i"><use href="#back"/></svg>Quay mới</button>
+    <div class="tools"><button class="ibtn"><svg class="i"><use href="#gear"/></svg></button><button class="ibtn" style="color:var(--green)"><svg class="i"><use href="#refresh"/></svg></button></div>
+    <div class="wb"><span>&#8212;</span><span>&#9744;</span><span>&#10005;</span></div>
+  </header>
+  <div class="body">
+    <div class="editor">
+      <div class="player"><div class="video"></div></div>
+      <div class="ctrl">
+        <button class="ibtn playb"><svg class="i"><use href="#play"/></svg></button>
+        <span class="tc"><b id="tcCur">00:11.40</b> / <span id="tcDur">00:36.00</span></span>
+        <span class="sp"></span>
+        <div class="segtools">
+          <button class="btn" title="Cắt đôi đoạn tại vạch đỏ (S)"><svg class="i"><use href="#cut"/></svg>Cắt tại đây <kbd>S</kbd></button>
+          <button class="btn" id="delBtn" title="Xoá đoạn đang chọn (Delete)"><svg class="i"><use href="#del"/></svg>Xoá đoạn <kbd>Del</kbd></button>
+          <button class="ibtn" title="Hoàn tác (Ctrl+Z)"><svg class="i"><use href="#undo"/></svg></button>
+          <button class="ibtn" title="Bỏ hết, về clip gốc"><svg class="i"><use href="#reset"/></svg></button>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="tl">
+          <div class="ruler" id="ruler"></div>
+          <div class="track" id="track"></div>
+          <div class="ph" id="ph"></div>
+        </div>
+        <div class="hintrow" id="hint"></div>
+      </div>
+    </div>
+    <aside class="eside">
+      <div class="grp"><h4>Thông tin</h4>
+        <div class="kv"><span>Tên</span><b>MonCam_2026-10-29…</b><span>Kích thước</span><b>1280 × 720</b><span>Clip gốc</span><b>00:42.00</b><span>Sau khi cắt</span><b id="total">00:36.00</b><span>Số đoạn</span><b id="count">3</b></div>
+      </div>
+      <div class="grp"><h4>Xuất</h4>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn pri full"><svg class="i"><use href="#save"/></svg>Lưu MP4</button>
+        </div>
+      </div>
+      <div class="grp"><h4>Xuất GIF</h4>
+        <div class="chips"><span class="chip">10 fps</span><span class="chip on">15 fps</span><span class="chip">24 fps</span></div>
+        <div class="chips"><span class="chip">50%</span><span class="chip on">75%</span><span class="chip">100%</span></div>
+        <button class="btn full"><svg class="i"><use href="#film"/></svg>Xuất GIF (~9.8 MB)</button>
+      </div>
+    </aside>
+  </div>
+  <footer class="foot"><span>D:\0_Video\MonCap\MonCam_2026-10-29_10-21-05.mp4</span><span class="credit">Created by Mondiro</span></footer>
+</div>
+<p class="note" id="note"></p>
+</div>
+
+<script>
+const STATES = {
+  1: { segs: [['A', 0, 12], ['B', 15, 30], ['C', 33, 42]], sel: 'B', ph: 11.4,
+       note: '<b>Cắt thành nhiều đoạn:</b> đặt vạch đỏ rồi bấm <b>Cắt tại đây</b> (<kbd>S</kbd>) để chia đôi đoạn. Bấm vào 1 đoạn để chọn (viền vàng): kéo 2 mép vàng để tỉa đầu/cuối riêng đoạn đó. Các đoạn luôn nằm sát nhau, phát thử là chạy liền mạch theo thứ tự trên timeline.' },
+  2: { segs: [['A', 0, 12], ['B', 15, 30], ['C', 33, 42]], sel: 'C', drag: 'C', ph: 11.4,
+       note: '<b>Kéo đổi chỗ:</b> giữ và kéo 1 đoạn sang trái/phải. Đoạn đang kéo nổi lên, ô nét đứt đỏ là chỗ sẽ thả; các đoạn khác tự trượt nhường chỗ. Thả ra là đoạn hít vào đúng ô, không có khoảng hở.' },
+  3: { segs: [['A', 0, 12], ['C', 33, 42]], sel: 'C', ph: 12,
+       note: '<b>Xoá đoạn:</b> chọn đoạn rồi bấm <b>Xoá đoạn</b> (<kbd>Del</kbd>). Các đoạn sau tự trượt sang trái khít lại. <kbd>Ctrl+Z</kbd> để lấy lại. <b>Lưu MP4 / Xuất GIF</b> sẽ ghép các đoạn theo đúng thứ tự trên timeline.' },
+};
+const fmt = s => { const m = Math.floor(s / 60), r = s - m * 60; return `${String(m).padStart(2, '0')}:${r.toFixed(2).padStart(5, '0')}`; };
+function render(k) {
+  const st = STATES[k], track = document.getElementById('track');
+  let segs = st.segs;
+  if (st.drag) segs = [segs[0], segs[2], segs[1]];   // C đang được kéo vào giữa
+  const total = segs.reduce((a, s) => a + s[2] - s[1], 0);
+  track.innerHTML = '';
+  let acc = 0;
+  segs.forEach(([n, a, b]) => {
+    const d = b - a, left = acc / total * 100, w = d / total * 100; acc += d;
+    if (st.drag === n) {
+      const slot = document.createElement('div'); slot.className = 'slot';
+      slot.style.left = `calc(${left}% + 2px)`; slot.style.width = `calc(${w}% - 4px)`; track.appendChild(slot);
+    }
+    const el = document.createElement('div');
+    el.className = 'seg' + (st.sel === n ? ' on' : '') + (st.drag === n ? ' drag' : '');
+    el.style.left = `calc(${st.drag === n ? left - 4 : left}% + 2px)`; el.style.width = `calc(${w}% - 4px)`;
+    el.innerHTML = `<div class="film"></div><span class="lab">Đoạn ${n} · ${fmt(a).slice(0, 5)}–${fmt(b).slice(0, 5)}</span><span class="dur">${d.toFixed(1)}s</span><i class="grip l"></i><i class="grip r"></i>`;
+    track.appendChild(el);
+  });
+  const r = document.getElementById('ruler'); r.innerHTML = '';
+  for (let i = 0; i <= 6; i++) { const s = document.createElement('span'); s.style.left = (i / 6 * 100) + '%'; s.textContent = fmt(total * i / 6).slice(0, 5); if (i === 0) s.style.transform = 'translateX(4px)'; if (i === 6) s.style.transform = 'translateX(calc(-100% - 4px))'; r.appendChild(s); }
+  document.getElementById('ph').style.left = (st.ph / total * 100) + '%';
+  document.getElementById('tcCur').textContent = fmt(st.ph);
+  document.getElementById('tcDur').textContent = fmt(total);
+  document.getElementById('total').textContent = fmt(total);
+  document.getElementById('count').textContent = segs.length;
+  document.getElementById('hint').innerHTML = `<svg class="i"><use href="#cut"/></svg>${segs.length} đoạn · tổng <b>${fmt(total)}</b><span class="sp"></span>Bấm chọn đoạn · kéo để đổi chỗ · kéo mép vàng để tỉa · <kbd>←</kbd><kbd>→</kbd> từng khung`;
+  document.getElementById('note').innerHTML = st.note;
+}
+render(1);
+document.getElementById('tabs').addEventListener('click', e => { const b = e.target.closest('.pv-tab'); if (!b) return;
+  document.querySelectorAll('.pv-tab').forEach(t => t.classList.toggle('on', t === b)); render(b.dataset.s); });
+</script>
+</body>
+</html>
