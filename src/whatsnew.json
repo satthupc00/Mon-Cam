@@ -1,14 +1,9 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "date": "2026-10-29",
-  "new": [
-    "Mon Cam chạy ở khay hệ thống: bấm X chỉ ẩn xuống khay, PrtSc và F12 vẫn dùng được. Chuột phải icon ở khay để chụp, quay hoặc thoát hẳn",
-    "Tuỳ chọn chạy cùng Windows (ẩn ở khay) trong Cài đặt",
-    "Nút Lưu (Ctrl+S) trong thanh ghi chú: lưu ảnh PNG và copy luôn; bấm vào ô báo để mở thư mục ảnh",
-    "Chọn thư mục lưu ảnh chụp riêng trong Cài đặt"
+  "new": [],
+  "improved": [
+    "Bấm PrtSc / Chụp ảnh: cửa sổ Mon Cam giữ nguyên, không tự ẩn đi nữa"
   ],
-  "improved": [],
-  "fixed": [
-    "Màn hình bật HDR: ảnh chụp và nền màn chọn vùng không còn bị cháy trắng"
-  ]
+  "fixed": []
 }

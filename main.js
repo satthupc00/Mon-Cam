@@ -162,8 +162,8 @@ async function startSelection(opts = {}) {
   if (rec || selecting) return;
   selecting = true;
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
-  if (win) win.hide();
-  await new Promise(r => setTimeout(r, 250));
+  // Chụp ảnh: giữ nguyên cửa sổ Mon Cam (người dùng tự né); chọn vùng quay thì ẩn đi
+  if (win && !opts.shot) { win.hide(); await new Promise(r => setTimeout(r, 250)); }
   const displays = screen.getAllDisplays();
   const maxW = Math.max(...displays.map(d => Math.round(d.size.width * d.scaleFactor)));
   const maxH = Math.max(...displays.map(d => Math.round(d.size.height * d.scaleFactor)));
@@ -180,7 +180,7 @@ async function startSelection(opts = {}) {
       list.forEach(o => { if (!o.isDestroyed()) o.destroy(); });
       selecting = null;
       ipcMain.removeAllListeners('sel:done'); ipcMain.removeAllListeners('sel:cancel'); ipcMain.removeAllListeners('sel:clear-others'); ipcMain.removeAllListeners('shot:done');
-      if (!res && mainWasVisible) showMain();
+      if (!res && mainWasVisible && !opts.shot) showMain();
       if (res) res.mainWasVisible = mainWasVisible;
       resolve(res);
     };
@@ -493,7 +493,7 @@ async function startShot() {
   const res = await startSelection({ shot: true });
   if (!res || !res.shot) return;
   const img = nativeImage.createFromDataURL(res.shot.url);
-  if (img.isEmpty()) { if (res.mainWasVisible) showMain(); notify('Chụp ảnh bị lỗi', 'error'); return; }
+  if (img.isEmpty()) { notify('Chụp ảnh bị lỗi', 'error'); return; }
   clipboard.writeImage(img);
   let file = null;
   if (res.shot.save) {
@@ -503,7 +503,6 @@ async function startShot() {
       fs.writeFileSync(file, img.toPNG());
     } catch (e) { file = null; notify('Không lưu được ảnh: ' + shortErr(e), 'error'); }
   }
-  if (res.mainWasVisible && win) win.showInactive();
   showShotToast(res.shot, file);
 }
 let shotToast = null;
