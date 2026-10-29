@@ -17,9 +17,9 @@ Vào mục **Releases** của repo, tải `MonCam-Setup-x.y.z.exe` và chạy.
 ## Phím tắt
 | Phím | Việc |
 |---|---|
-| F12 | Bắt đầu (vùng gần nhất) / Dừng & lưu |
+| F12 | Chọn vùng & quay (vùng cũ hiện sẵn) · đang quay thì dừng & lưu |
+| Esc | Dừng & lưu khi đang quay |
 | Shift+F12 | Tạm dừng / Tiếp tục |
-| Ctrl+Shift+R | Chọn vùng mới |
 | PrtSc (hoặc Ctrl+Shift+S) | Chụp ảnh: A mũi tên · R khung · T chữ · P bút · H tô sáng · B làm mờ · Ctrl+Z hoàn tác · Enter/Ctrl+C copy · Ctrl+S lưu + copy |
 | Space · I · O · ← → | Trong màn Xem lại: phát/dừng, đặt điểm đầu/cuối, lùi/tới từng khung |
 

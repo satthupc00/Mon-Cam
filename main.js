@@ -158,12 +158,48 @@ function lastRectOn(d) {
 }
 let overlays = [];
 let selecting = null;
+// Cửa sổ chọn vùng được tạo sẵn và giấu ngoài màn hình (trong suốt, không nhận chuột).
+// Khi cần chỉ việc đưa vào đúng màn hình → hiện tức thì, không có hiệu ứng mở cửa sổ của Windows.
+const OFF = -32000;
+const pool = new Map();   // displayId -> BrowserWindow
+function overlayFor(d) {
+  let o = pool.get(d.id);
+  if (o && !o.isDestroyed()) return o;
+  o = new BrowserWindow({
+    x: OFF, y: OFF, width: d.bounds.width, height: d.bounds.height,
+    frame: false, transparent: false, backgroundColor: '#000000', resizable: false, movable: false,
+    skipTaskbar: true, alwaysOnTop: true, fullscreenable: false, show: false, hasShadow: false, enableLargerThanScreen: true,
+    type: isWin ? 'toolbar' : undefined,   // không hiện trong Alt+Tab
+    webPreferences: { preload, backgroundThrottling: false },
+  });
+  o.setOpacity(0);
+  o.setIgnoreMouseEvents(true);
+  o.loadFile(page('overlay.html'));
+  o._ready = new Promise(r => o.webContents.once('did-finish-load', r));
+  o.once('ready-to-show', () => o.showInactive());
+  o.on('closed', () => { if (pool.get(d.id) === o) pool.delete(d.id); });
+  pool.set(d.id, o);
+  return o;
+}
+function parkOverlay(o) {
+  if (!o || o.isDestroyed()) return;
+  o.webContents.send('sel:reset');
+  o.setOpacity(0);
+  o.setIgnoreMouseEvents(true);
+  o.setBounds({ x: OFF, y: OFF, width: o.getBounds().width, height: o.getBounds().height });
+}
+function warmOverlays() {
+  const ids = new Set(screen.getAllDisplays().map(d => d.id));
+  for (const [id, o] of pool) if (!ids.has(id)) { if (!o.isDestroyed()) o.destroy(); pool.delete(id); }
+  screen.getAllDisplays().forEach(overlayFor);
+}
+
 async function startSelection(opts = {}) {
   if (rec || selecting) return;
   selecting = true;
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
   // Chụp ảnh: giữ nguyên cửa sổ Mon Cam (người dùng tự né); chọn vùng quay thì ẩn đi
-  if (win && !opts.shot) { win.hide(); await new Promise(r => setTimeout(r, 250)); }
+  if (win && !opts.shot) { win.hide(); await new Promise(r => setTimeout(r, 200)); }
   const displays = screen.getAllDisplays();
   const maxW = Math.max(...displays.map(d => Math.round(d.size.width * d.scaleFactor)));
   const maxH = Math.max(...displays.map(d => Math.round(d.size.height * d.scaleFactor)));
@@ -174,12 +210,12 @@ async function startSelection(opts = {}) {
   if (!grabs.length || grabs.some(g => !g)) {
     try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: maxW, height: maxH } }); } catch {}
   }
+  const cursorId = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id;
   return new Promise(resolve => {
     const done = res => {
-      const list = overlays; overlays = [];
-      list.forEach(o => { if (!o.isDestroyed()) o.destroy(); });
+      overlays.forEach(parkOverlay); overlays = [];
       selecting = null;
-      ipcMain.removeAllListeners('sel:done'); ipcMain.removeAllListeners('sel:cancel'); ipcMain.removeAllListeners('sel:clear-others'); ipcMain.removeAllListeners('shot:done');
+      ['sel:done', 'sel:cancel', 'sel:clear-others', 'shot:done', 'sel:ready'].forEach(c => ipcMain.removeAllListeners(c));
       if (!res && mainWasVisible && !opts.shot) showMain();
       if (res) res.mainWasVisible = mainWasVisible;
       resolve(res);
@@ -194,30 +230,34 @@ async function startSelection(opts = {}) {
     ipcMain.on('sel:cancel', () => done(null));
     ipcMain.on('shot:done', (e, r) => done({ shot: r }));
     ipcMain.on('sel:clear-others', e => overlays.forEach(o => { if (!o.isDestroyed() && o.webContents !== e.sender) o.webContents.send('sel:clear'); }));
-    displays.forEach((d, i) => {
-      const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
-      const o = new BrowserWindow({
-        x: d.bounds.x, y: d.bounds.y, width: d.bounds.width, height: d.bounds.height,
-        frame: false, transparent: false, backgroundColor: '#000000', resizable: false, movable: false,
-        skipTaskbar: true, alwaysOnTop: true, fullscreenable: false, show: false, hasShadow: false, enableLargerThanScreen: true,
-        webPreferences: { preload },
-      });
+    // Ảnh nền đã vẽ xong → đưa cửa sổ vào màn hình
+    ipcMain.on('sel:ready', e => {
+      const o = overlays.find(x => !x.isDestroyed() && x.webContents === e.sender);
+      if (!o) return;
+      o.setBounds(o._display.bounds);
+      o.setIgnoreMouseEvents(false);
       o.setAlwaysOnTop(true, 'screen-saver');
-      o.setBounds(d.bounds);
-      o.loadFile(page('overlay.html'));
-      o.webContents.once('did-finish-load', () => {
+      o.setOpacity(1);
+      o.moveTop();
+      if (o._display.id === cursorId) { o.show(); o.focus(); }
+    });
+    overlays = displays.map((d, i) => {
+      const o = overlayFor(d);
+      o._display = d;
+      const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
+      o._ready.then(() => {
+        if (o.isDestroyed() || !selecting) return;
+        if (!o.isVisible()) o.showInactive();
         o.webContents.send('sel:init', {
           displayId: d.id, scale: d.scaleFactor, w: d.bounds.width, h: d.bounds.height,
           img: grabs[i] || (src ? src.thumbnail.toDataURL() : null), shot: !!opts.shot,
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
-          cursorHere: screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id,
+          cursorHere: d.id === cursorId,
           last: opts.shot ? null : lastRectOn(d),
         });
-        o.show();
-        if (screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id) o.focus();
       });
-      overlays.push(o);
+      return o;
     });
   });
 }
@@ -237,7 +277,9 @@ function makeFloat(bounds, file, opts = {}) {
   w.once('ready-to-show', () => w.showInactive());
   return w;
 }
+function releaseEsc() { try { globalShortcut.unregister('Escape'); } catch {} }
 function closeFloats() {
+  releaseEsc();
   [frameWin, barWin, fxWin].forEach(w => { if (w && !w.isDestroyed()) w.destroy(); });
   frameWin = barWin = fxWin = null;
 }
@@ -323,6 +365,8 @@ async function beginRecording(sel) {
   r.on('crash', () => { notify('Bản quay bị ngắt giữa chừng, đã lưu phần trước đó', 'error'); stopRecording(); });
   rec.timer = setInterval(pushRecState, 250);
   pushRecState();
+  // Esc = dừng & lưu, chỉ giữ phím này trong lúc đang quay
+  try { globalShortcut.register('Escape', () => { if (rec) stopRecording(); }); } catch {}
 }
 
 function recState() {
@@ -522,13 +566,13 @@ let tray = null, quitting = false;
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'src', 'tray.png'));
   tray = new Tray(icon.isEmpty() ? nativeImage.createFromPath(path.join(__dirname, 'src', 'icon.png')).resize({ width: 16, height: 16 }) : icon);
-  tray.setToolTip('Mon Cam · PrtSc chụp ảnh · F12 quay');
+  tray.setToolTip('Mon Cam · PrtSc chụp ảnh · F12 quay vùng · Esc dừng');
   const menu = Menu.buildFromTemplate([
     { label: 'Mở Mon Cam', click: showMain },
     { type: 'separator' },
     { label: 'Chụp ảnh', accelerator: 'PrintScreen', registerAccelerator: false, click: () => startShot() },
-    { label: 'Chọn vùng & quay', accelerator: 'CmdOrCtrl+Shift+R', registerAccelerator: false, click: () => startMode('region') },
-    { label: 'Quay lại vùng trước', accelerator: 'F12', registerAccelerator: false, click: () => { if (rec) stopRecording(); else startMode('last'); } },
+    { label: 'Chọn vùng & quay', accelerator: 'F12', registerAccelerator: false, click: () => startMode('region') },
+    { label: 'Dừng quay', accelerator: 'Esc', registerAccelerator: false, click: () => { if (rec) stopRecording(); } },
     { type: 'separator' },
     { label: 'Mở thư mục video', click: () => { fs.mkdirSync(settings.outDir, { recursive: true }); shell.openPath(settings.outDir); } },
     { label: 'Mở thư mục ảnh chụp', click: () => { fs.mkdirSync(settings.shotDir, { recursive: true }); shell.openPath(settings.shotDir); } },
@@ -547,7 +591,7 @@ function applyLoginItem() {
 let shotKeyOk = true;
 function registerKeys() {
   globalShortcut.unregisterAll();
-  globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('last'); });
+  globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('region'); });
   globalShortcut.register('Shift+F12', togglePause);
   globalShortcut.register('CommandOrControl+Shift+R', () => { if (!rec) startMode('region'); });
   shotKeyOk = globalShortcut.register('PrintScreen', startShot);
@@ -718,6 +762,8 @@ app.whenReady().then(() => {
   setupAudioCapture();
   createMain();
   createTray();
+  setTimeout(warmOverlays, 1500);
+  screen.on('display-added', warmOverlays); screen.on('display-removed', warmOverlays); screen.on('display-metrics-changed', warmOverlays);
   applyLoginItem();
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);

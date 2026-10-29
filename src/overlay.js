@@ -7,27 +7,55 @@ let sel = null;            // {x,y,w,h} theo DIP trong màn này
 let drag = null;           // {mode,sx,sy,orig}
 let img = null;
 
-api.on('sel:init', c => {
+const HINT_REC = $('hint').innerHTML;
+api.on('sel:init', async c => {
   cfg = c;
-  if (c.img) { shot.src = c.img; img = new Image(); img.src = c.img; }
+  resetState();
+  $('hint').innerHTML = HINT_REC;
+  $('hint').style.opacity = 1;
+  if (c.img) {
+    img = new Image(); img.src = c.img;
+    shot.src = c.img;
+    try { await img.decode(); await shot.decode(); } catch {}
+  }
   if (c.last) {
     sel = norm({ x: c.last.x, y: c.last.y, w: c.last.w, h: c.last.h });
     $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
   }
   $('pLast').hidden = !c.last;
-  if (c.shot) setupShot();
+  if (c.shot) setupShot(); else { $('shotbar').style.display = 'none'; bar = $('bar'); }
   sizeCanvas(); syncToggles(); draw();
   if (!c.cursorHere) $('hint').style.opacity = 0;
+  requestAnimationFrame(() => api.send('sel:ready'));
+});
+// Cửa sổ được giấu đi để dùng lại lần sau: xoá sạch trạng thái
+function resetState() {
+  sel = null; drag = null;
+  Ann.cancelText(); Ann.items = []; Ann.cur = null; Ann.tool = null;
+  if (Ann.ctx) Ann.redraw();   // xoá nét vẽ của lần chụp trước
+  document.body.classList.remove('tool-on', 'tool-text');
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('on'));
+  loupe.style.display = 'none';
+  bar.style.display = 'none';
+}
+api.on('sel:reset', () => {
+  resetState(); cfg = { ...cfg, shot: false }; img = null;
+  shot.removeAttribute('src');
+  draw();
 });
 api.on('sel:clear', () => { sel = null; draw(); });
 
 // ---------- chế độ chụp ảnh ----------
 const COLORS = [['#E5383B', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
 const TOOL_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl', b: 'blur' };
+let shotReady = false, SHOT_HINT = '';
 function setupShot() {
   $('bar').style.display = 'none';
   bar = $('shotbar');
-  $('hint').innerHTML = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · <kbd>Enter</kbd> copy · <kbd>Ctrl+S</kbd> lưu + copy · <kbd>Esc</kbd> huỷ';
+  Ann.img = img;
+  if (shotReady) { $('hint').innerHTML = SHOT_HINT; return; }
+  shotReady = true;
+  $('hint').innerHTML = SHOT_HINT = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · <kbd>Enter</kbd> copy · <kbd>Ctrl+S</kbd> lưu + copy · <kbd>Esc</kbd> huỷ';
   const sw = $('swatches');
   COLORS.forEach(([c, n], i) => {
     const b = document.createElement('button');
@@ -85,8 +113,10 @@ function norm(r) {
 function draw() {
   const g = dim.getContext('2d');
   g.clearRect(0, 0, dim.width, dim.height);
-  g.fillStyle = 'rgba(0,0,0,.5)';
-  g.fillRect(0, 0, dim.width, dim.height);
+  if (!cfg.shot) {   // chụp ảnh: không phủ tối, màn hình giữ nguyên
+    g.fillStyle = 'rgba(0,0,0,.5)';
+    g.fillRect(0, 0, dim.width, dim.height);
+  }
   if (cfg.shot) Ann.redraw();
   selEl.classList.toggle('drawing', !!(cfg.shot && Ann.tool));
   if (!sel) { selEl.style.display = tag.style.display = bar.style.display = 'none'; return; }
