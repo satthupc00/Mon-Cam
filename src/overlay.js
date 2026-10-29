@@ -1,6 +1,6 @@
 hydrateIcons();
 const $ = id => document.getElementById(id);
-const shot = $('shot'), dim = $('dim'), selEl = $('sel'), tag = $('tag'), loupe = $('loupe'), lc = $('lc').getContext('2d');
+const shot = $('shot'), selEl = $('sel'), tag = $('tag'), loupe = $('loupe'), lc = $('lc').getContext('2d');
 let bar = $('bar');
 let cfg = { scale: 1, w: innerWidth, h: innerHeight, cursor: true, audio: true, gif: false };
 let sel = null;            // {x,y,w,h} theo DIP trong màn này
@@ -39,7 +39,7 @@ function resetState() {
   bar.style.display = 'none';
 }
 api.on('sel:reset', () => {
-  resetState(); cfg = { ...cfg, shot: false }; img = null;
+  resetState(); cfg = { ...cfg, shot: false }; img = null; shade(null);
   shot.removeAttribute('src');
   draw();
 });
@@ -84,7 +84,7 @@ function doShot(save) {
   api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true });
 }
 
-function sizeCanvas() { dim.width = innerWidth; dim.height = innerHeight; }
+function sizeCanvas() {}
 addEventListener('resize', () => { sizeCanvas(); draw(); });
 
 function syncToggles() {
@@ -110,17 +110,23 @@ function norm(r) {
   return { x, y, w, h };
 }
 
+// Phủ tối 50% ngoài vùng chọn bằng 4 khối màu (rẻ hơn nhiều so với tô lại cả canvas mỗi lần rê chuột)
+const shades = ['t', 'b', 'l', 'r'].map(k => $('sh' + k));
+function shade(r) {
+  const [t, b, l, rt] = shades;
+  if (!r) { Object.assign(t.style, { left: 0, top: 0, width: '100%', height: '100%' }); [b, l, rt].forEach(e => e.style.height = '0'); return; }
+  const W = innerWidth, H = innerHeight, x = Math.round(r.x), y = Math.round(r.y), w = Math.round(r.w), h = Math.round(r.h);
+  Object.assign(t.style, { left: 0, top: 0, width: W + 'px', height: y + 'px' });
+  Object.assign(b.style, { left: 0, top: y + h + 'px', width: W + 'px', height: Math.max(0, H - y - h) + 'px' });
+  Object.assign(l.style, { left: 0, top: y + 'px', width: x + 'px', height: h + 'px' });
+  Object.assign(rt.style, { left: x + w + 'px', top: y + 'px', width: Math.max(0, W - x - w) + 'px', height: h + 'px' });
+}
+
 function draw() {
-  const g = dim.getContext('2d');
-  g.clearRect(0, 0, dim.width, dim.height);
-  if (!cfg.shot) {   // chụp ảnh: không phủ tối, màn hình giữ nguyên
-    g.fillStyle = 'rgba(0,0,0,.5)';
-    g.fillRect(0, 0, dim.width, dim.height);
-  }
-  if (cfg.shot) Ann.redraw();
+  shade(sel);
+  if (cfg.shot && (Ann.items.length || Ann.cur)) Ann.redraw();
   selEl.classList.toggle('drawing', !!(cfg.shot && Ann.tool));
   if (!sel) { selEl.style.display = tag.style.display = bar.style.display = 'none'; return; }
-  g.clearRect(sel.x, sel.y, sel.w, sel.h);
   Object.assign(selEl.style, { display: 'block', left: sel.x - 1 + 'px', top: sel.y - 1 + 'px', width: sel.w + 2 + 'px', height: sel.h + 2 + 'px' });
   tag.textContent = `${phys(sel.w)} × ${phys(sel.h)}`;
   tag.style.display = 'block';

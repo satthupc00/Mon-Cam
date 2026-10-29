@@ -1,15 +1,16 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "date": "2026-10-29",
   "new": [
-    "Cắt video thành nhiều đoạn: đặt vạch đỏ rồi bấm Cắt tại đây (phím S)",
-    "Xoá đoạn (phím Del), các đoạn còn lại tự khít lại với nhau",
-    "Giữ và kéo để đổi thứ tự các đoạn, các đoạn khác tự trượt nhường chỗ",
-    "Kéo mép vàng để tỉa đầu/cuối từng đoạn; Ctrl+Z hoàn tác, nút ↺ về clip gốc",
-    "Phát thử, Lưu MP4 và Xuất GIF đều ghép các đoạn theo đúng thứ tự trên timeline"
+    "Timeline: lăn chuột để phóng to / thu nhỏ, giữ chuột phải kéo để di chuyển qua lại",
+    "Xoá đoạn sẽ để lại khoảng trống; kéo đoạn khác vào là tự hít vào mép (mép đoạn bên cạnh, đầu timeline, vạch đỏ)",
+    "Khoảng trống khi Lưu MP4 / Xuất GIF sẽ là hình đen và im lặng; phát thử cũng hiện màn đen ở chỗ trống"
   ],
-  "improved": [],
+  "improved": [
+    "Timeline không tự co lại khi xoá hoặc tỉa đoạn",
+    "Lớp phủ tối 50% ngoài vùng chọn trở lại, vẽ nhẹ hơn nên rê chuột mượt hơn"
+  ],
   "fixed": [
-    "Phím F12 giờ đã mở được màn chọn vùng để quay (trước đây Windows giữ phím này nên app không nhận)"
+    "Màn hình bật HDR: video trong màn Xem lại & cắt không còn bị cháy sáng; video mới quay được ghi rõ hệ màu chuẩn"
   ]
 }

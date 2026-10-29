@@ -6,7 +6,7 @@ App quay màn hình cho Windows (giống Bandicam), by Mondiro.
 - Xuất MP4 15/30/60 fps hoặc GIF
 - Bật/tắt con trỏ chuột, hiệu ứng click, âm thanh máy (trong Cài đặt)
 - Tạm dừng / tiếp tục khi đang quay
-- Xem lại ngay: cắt thành nhiều đoạn, xoá đoạn, kéo đổi thứ tự (tự khít), lưu MP4 hoặc xuất GIF
+- Xem lại ngay: cắt thành nhiều đoạn, xoá đoạn (để lại khoảng trống = hình đen), kéo đoạn tự hít vào mép, lăn chuột phóng to timeline, chuột phải kéo để di chuyển; lưu MP4 hoặc xuất GIF
 - Chụp ảnh màn hình (PrtSc) kèm vẽ ghi chú, copy thẳng để dán
 - Chạy ở khay hệ thống: tắt cửa sổ vẫn bấm PrtSc / F12 được
 - Tự cập nhật qua GitHub Releases

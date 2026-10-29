@@ -46,7 +46,7 @@
   <div class="body" id="editor" hidden>
     <div class="editor">
       <div class="player" id="player">
-        <video id="vid" preload="auto"></video>
+        <div class="vwrap" id="vwrap"><video id="vid" preload="auto"></video><div class="gapcover" id="gapCover" hidden>Khoảng trống · sẽ là hình đen</div></div>
         <img id="gifImg" alt="" hidden>
       </div>
       <div class="ctrl" id="ctrl">
@@ -64,12 +64,15 @@
         <span class="vol" title="Âm lượng xem thử"><span data-i="vol"></span><input type="range" id="volume" min="0" max="100" value="80"></span>
       </div>
       <div class="timeline" id="timeline">
-        <div class="tlwrap" id="tl">
-          <div class="ruler" id="ruler" title="Bấm hoặc kéo để tua"></div>
-          <div class="segtrack" id="track"></div>
-          <div class="playhead" id="ph"></div>
+        <div class="tlview" id="tl">
+          <div class="tlcontent" id="tlc">
+            <div class="ruler" id="ruler" title="Bấm hoặc kéo để tua"></div>
+            <div class="segtrack" id="track"></div>
+            <div class="snapline" id="snapLine" hidden></div>
+            <div class="playhead" id="ph"></div>
+          </div>
         </div>
-        <div class="trimrow"><span data-i="scissors"></span><span id="segInfo"></span><span class="sp"></span><span class="tlhelp">Bấm chọn đoạn · kéo để đổi chỗ · kéo mép vàng để tỉa · <kbd>←</kbd><kbd>→</kbd> từng khung</span></div>
+        <div class="trimrow"><span data-i="scissors"></span><span id="segInfo"></span><span class="sp"></span><span class="tlhelp">Kéo đoạn để di chuyển (tự hít vào mép) · kéo mép vàng để tỉa · lăn chuột để phóng to/thu nhỏ · giữ chuột phải kéo để di chuyển timeline</span></div>
       </div>
     </div>
     <aside class="eside">

@@ -144,15 +144,16 @@ api.on('rec:done', d => {
   if (d.open) openEditor(d.file);
 });
 
-// ---------- XEM LẠI & CẮT (nhiều đoạn) ----------
-// Mỗi đoạn {id,s,e} là 1 khoảng thời gian trong clip gốc. Timeline xếp các đoạn sát nhau theo thứ tự;
-// "thời gian timeline" = cộng dồn độ dài các đoạn.
+// ---------- XEM LẠI & CẮT (nhiều đoạn, có khoảng trống) ----------
+// Mỗi đoạn {id,s,e,t}: s..e là khoảng trong clip gốc, t là chỗ bắt đầu trên timeline.
+// Các đoạn không chồng lên nhau; chỗ trống giữa các đoạn khi lưu sẽ là hình đen + im lặng.
 const vid = $('vid');
 let cur = null;           // thông tin clip đang mở
 let segs = [], selId = null, hist = [], segSeq = 0;
-let ci = 0;               // đoạn đang phát
-let playing = false;
+let playing = false, P = 0, lastTick = 0;   // P = vị trí vạch đỏ (giây trên timeline)
 let stripUrl = null;
+let pps = 50;             // số pixel cho 1 giây (mức phóng to)
+let userZoomed = false;   // người dùng đã tự lăn chuột phóng to/thu nhỏ chưa
 
 function showView(v) {
   $('home').hidden = v !== 'home';
@@ -160,38 +161,24 @@ function showView(v) {
   $('backBtn').hidden = v !== 'editor';
   $('openDir').hidden = v === 'editor';
   api.invoke('win:layout', v).catch(() => {});
-  if (v === 'home') { vid.pause(); vid.removeAttribute('src'); vid.load(); cur = null; loadRecent(); }
+  if (v === 'home') { stopPlay(); vid.removeAttribute('src'); vid.load(); cur = null; loadRecent(); }
   refreshFoot();
 }
 $('backBtn').onclick = () => showView('home');
 
-const newSeg = (s, e) => ({ id: ++segSeq, s, e });
+const newSeg = (s, e, t) => ({ id: ++segSeq, s, e, t });
 const segLen = g => g.e - g.s;
-const total = () => segs.reduce((t, g) => t + segLen(g), 0);
-const startOf = i => { let t = 0; for (let k = 0; k < i; k++) t += segLen(segs[k]); return t; };
-function locate(t) {            // thời gian timeline → {i, src}
-  let acc = 0;
-  for (let i = 0; i < segs.length; i++) {
-    const d = segLen(segs[i]);
-    if (t < acc + d || i === segs.length - 1) return { i, src: segs[i].s + Math.min(d, Math.max(0, t - acc)) };
-    acc += d;
-  }
-  return { i: 0, src: 0 };
-}
-function pos() {                // vị trí vạch đỏ theo thời gian timeline
-  const g = segs[ci]; if (!g) return 0;
-  return startOf(ci) + Math.min(segLen(g), Math.max(0, (vid.currentTime || 0) - g.s));
-}
-function seekTo(t) {
-  if (!segs.length) return;
-  const L = locate(Math.max(0, Math.min(total(), t)));
-  ci = L.i; vid.currentTime = L.src;
-}
+const segEnd = g => g.t + segLen(g);
+const ordered = () => segs.slice().sort((a, b) => a.t - b.t);
+const total = () => segs.reduce((m, g) => Math.max(m, segEnd(g)), 0);
+const keptLen = () => segs.reduce((t, g) => t + segLen(g), 0);
+const segAt = t => segs.find(g => t >= g.t - 1e-6 && t < segEnd(g) - 1e-6) || null;
+const pos = () => P;
 function pushHist() { hist.push(JSON.stringify({ segs, selId })); if (hist.length > 100) hist.shift(); }
 function undo() {
   const h = hist.pop(); if (!h) return;
   const o = JSON.parse(h); segs = o.segs; selId = o.selId;
-  ci = Math.min(ci, segs.length - 1); renderSegs(true);
+  renderSegs(true); seekTo(P);
 }
 
 async function openEditor(file) {
@@ -200,11 +187,11 @@ async function openEditor(file) {
   cur = info;
   showView('editor');
   const isImg = info.isGif;
-  $('gifImg').hidden = !isImg; vid.hidden = isImg;
+  $('gifImg').hidden = !isImg; $('vwrap').hidden = isImg;
   $('ctrl').classList.toggle('off', isImg); $('timeline').classList.toggle('off', isImg);
   $('mp4Grp').hidden = isImg; $('gifGrp').hidden = isImg;
   if (isImg) $('gifImg').src = info.url; else { vid.src = info.url; vid.load(); }
-  segs = [newSeg(0, info.duration || 0)]; selId = null; hist = []; ci = 0;
+  segs = [newSeg(0, info.duration || 0, 0)]; selId = null; hist = []; P = 0; playing = false; renderPlay();
   $('iName').textContent = info.name; $('iName').title = info.name;
   $('iSize').textContent = info.width ? `${info.width} × ${info.height}` : '—';
   $('iFps').textContent = info.fps || '—';
@@ -212,9 +199,9 @@ async function openEditor(file) {
   $('iBytes').textContent = fmtB(info.size);
   $('owRow').hidden = !/\.mp4$/i.test(info.file);
   $('overwrite').checked = false;
-  stripUrl = null;
-  renderSegs(true);
-  const n = Math.max(8, Math.round($('track').clientWidth / 90));
+  stripUrl = null; userZoomed = false;
+  requestAnimationFrame(() => { fitZoom(); renderSegs(true); seekTo(0); });
+  const n = Math.max(8, Math.round(tl.clientWidth / 90));
   if (!isImg) api.invoke('media:strip', info.src, n).then(u => { if (u && cur === info) { stripUrl = u; renderSegs(true); } });
 }
 
@@ -222,30 +209,49 @@ vid.addEventListener('loadedmetadata', () => {
   if (cur && isFinite(vid.duration) && (!cur.duration || Math.abs(vid.duration - cur.duration) > 0.5)) {
     const old = cur.duration; cur.duration = vid.duration; $('iDur').textContent = fmtTc(vid.duration);
     if (segs.length === 1 && segs[0].s === 0 && Math.abs(segs[0].e - old) < 0.01) segs[0].e = vid.duration;
-    renderSegs(true);
+    fitZoom(); renderSegs(true);
   }
 });
-vid.addEventListener('play', () => { playing = true; renderPlay(); });
-vid.addEventListener('pause', () => { playing = false; renderPlay(); });
 $('volume').oninput = () => { vid.volume = $('volume').value / 100; };
 vid.volume = .8;
 
 function renderPlay() { $('playBtn').innerHTML = icon(playing ? 'pause' : 'play'); }
 renderPlay();
 
-// --- vẽ timeline ---
-const track = $('track'), tl = $('tl');
+// --- phóng to / thu nhỏ timeline (không tự co lại khi xoá/tỉa đoạn) ---
+const tl = $('tl'), tlc = $('tlc'), track = $('track');
+function fitZoom() {
+  const W = tl.clientWidth - 24, d = Math.max(1, total() || (cur && cur.duration) || 1);
+  pps = Math.max(2, W / d);
+}
+function contentWidth() { return Math.max(tl.clientWidth, (Math.max(total(), (cur && cur.duration) || 0) + 3) * pps + 40); }
+function zoomAt(factor, clientX) {
+  const r = tl.getBoundingClientRect(), mx = clientX - r.left;
+  const t = (tl.scrollLeft + mx) / pps;
+  const minP = (tl.clientWidth - 24) / Math.max(1, Math.max(total(), (cur && cur.duration) || 1) * 1.5);
+  pps = Math.min(600, Math.max(Math.min(2, minP), pps * factor));
+  renderSegs(true);
+  tl.scrollLeft = t * pps - mx;
+}
 function buildRuler() {
-  const r = $('ruler'), d = total(); r.innerHTML = '';
-  if (!d) return;
-  const n = 8;
-  for (let i = 0; i <= n; i++) {
-    const sp = document.createElement('span');
-    sp.style.left = (i / n * 100) + '%';
-    sp.textContent = fmtDur(d * i / n);
-    r.appendChild(sp);
+  const r = $('ruler'); r.innerHTML = '';
+  const W = contentWidth();
+  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300];
+  const step = steps.find(x => x * pps >= 70) || 600;
+  const sub = step / 5;
+  for (let k = 0; k * sub * pps <= W; k++) {
+    const t = Math.round(k * sub * 1000) / 1000, x = t * pps, major = k % 5 === 0;
+    const tick = document.createElement('i'); tick.style.left = x + 'px'; tick.style.height = major ? '8px' : '4px'; r.appendChild(tick);
+    if (major) {
+      const sp = document.createElement('span'); sp.style.setProperty('--x', x + 'px');
+      sp.textContent = step < 1 ? fmtTc(t).slice(0, 7) : fmtDur(t);
+      if (t === 0) sp.style.setProperty('--x', '14px');
+      r.appendChild(sp);
+    }
   }
 }
+
+// --- vẽ các đoạn ---
 function segEl(g) {
   let el = track.querySelector(`.segk[data-id="${g.id}"]`);
   if (!el) {
@@ -256,48 +262,41 @@ function segEl(g) {
   }
   return el;
 }
-// Đặt vị trí/khổ cho các khối. order: thứ tự hiển thị (có thể khác segs khi đang kéo)
-function layout(order, opts = {}) {
-  const W = track.clientWidth, T = total() || 1, srcD = (cur && cur.duration) || T;
-  let x = 0;
-  order.forEach(g => {
-    const w = segLen(g) / T * W;
-    if (g === opts.slot) { const sl = track.querySelector('.segslot'); if (sl) { sl.style.width = Math.max(4, w - 4) + 'px'; sl.style.transform = `translateX(${x + 2}px)`; } }
-    const el = segEl(g);
-    el.style.width = Math.max(6, w - 4) + 'px';
-    if (g !== opts.dragging) el.style.transform = `translateX(${x + 2}px)`;
-    if (stripUrl) {
-      const bw = w * srcD / Math.max(0.01, segLen(g));
-      el.style.backgroundImage = `url("${stripUrl}")`;
-      el.style.backgroundSize = `${bw}px 100%`;
-      el.style.backgroundPosition = `${-g.s / srcD * bw}px 0`;
-    } else el.style.backgroundImage = '';
-    x += w;
-  });
+function placeEl(g, t) {
+  const el = segEl(g), srcD = (cur && cur.duration) || 1, w = segLen(g) * pps;
+  el.style.width = Math.max(6, w - 2) + 'px';
+  el.style.transform = `translateX(${(t ?? g.t) * pps + 1}px)`;
+  if (stripUrl) {
+    const bw = srcD * pps;
+    el.style.backgroundImage = `url("${stripUrl}")`;
+    el.style.backgroundSize = `${bw}px 100%`;
+    el.style.backgroundPosition = `${-g.s * pps}px 0`;
+  } else el.style.backgroundImage = '';
 }
 function renderSegs(instant) {
+  tlc.style.width = contentWidth() + 'px';
   const ids = new Set(segs.map(g => String(g.id)));
   track.querySelectorAll('.segk').forEach(el => { if (!ids.has(el.dataset.id)) el.remove(); });
-  segs.forEach((g, i) => {
+  ordered().forEach((g, i) => {
     const el = segEl(g);
     el.classList.toggle('on', g.id === selId);
     el.querySelector('.lab').textContent = `Đoạn ${i + 1} · ${fmtDur(g.s)}–${fmtDur(g.e)}`;
     el.querySelector('.dur').textContent = segLen(g).toFixed(1) + 's';
     if (instant) el.style.transition = 'none';
+    if (!(act && act.type === 'move' && act.g === g)) placeEl(g);
   });
-  layout(segs);
   if (instant) requestAnimationFrame(() => track.querySelectorAll('.segk').forEach(el => el.style.transition = ''));
   buildRuler();
-  const T = total();
+  const T = total(), gaps = Math.max(0, T - keptLen());
   $('tcDur').textContent = fmtTc(T);
   $('iTotal').textContent = fmtTc(T);
   $('iCount').textContent = segs.length;
-  $('segInfo').innerHTML = `${segs.length} đoạn · tổng <b>${fmtTc(T)}</b>`;
+  $('segInfo').innerHTML = `${segs.length} đoạn · tổng <b>${fmtTc(T)}</b>` + (gaps > 0.05 ? ` · khoảng trống <b>${gaps.toFixed(1)}s</b> (hình đen)` : '');
   $('delSegBtn').disabled = !selId || segs.length < 2;
   $('undoBtn').disabled = !hist.length;
   renderGifEst();
 }
-addEventListener('resize', () => { if (cur && !$('editor').hidden) renderSegs(true); });
+addEventListener('resize', () => { if (cur && !$('editor').hidden) { if (!userZoomed) fitZoom(); renderSegs(true); } });
 
 function renderGifEst() {
   if (!cur) return;
@@ -306,28 +305,47 @@ function renderGifEst() {
   $('saveGif').lastChild.textContent = `Xuất GIF (~${fmtB(est)})`;
 }
 
-// Phát liền mạch qua các đoạn
-(function loop() {
-  if (cur && !vid.hidden && segs.length) {
-    const g = segs[ci];
-    if (playing && g && vid.currentTime >= g.e - 0.02) {
-      if (ci < segs.length - 1) { ci++; vid.currentTime = segs[ci].s; }
-      else { vid.pause(); vid.currentTime = g.e; }
-    }
-    const T = total() || 1, p = pos();
-    $('ph').style.left = (p / T * 100) + '%';
-    $('tcCur').textContent = fmtTc(p);
-  }
-  requestAnimationFrame(loop);
-})();
-
-function togglePlay() {
-  if (!cur || vid.hidden) return;
-  if (playing) return vid.pause();
-  if (pos() >= total() - 0.03) seekTo(0);
-  else { const g = segs[ci]; if (vid.currentTime < g.s || vid.currentTime > g.e) vid.currentTime = g.s; }
-  vid.play().catch(() => {});
+// --- phát thử: chạy theo đồng hồ timeline; trong đoạn thì phát video, chỗ trống thì màn đen ---
+function showFrameAt(t) {
+  const g = segAt(t);
+  $('gapCover').hidden = !!g;
+  if (g) { const want = g.s + (t - g.t); if (Math.abs(vid.currentTime - want) > 0.04) vid.currentTime = want; }
+  return g;
 }
+function seekTo(t) {
+  P = Math.max(0, Math.min(total(), t));
+  if (!playing) { vid.pause(); showFrameAt(P); }
+  else syncPlay(true);
+}
+let playSeg = null;
+function syncPlay(force) {
+  const g = segAt(P);
+  $('gapCover').hidden = !!g;
+  if (!g) { if (!vid.paused) vid.pause(); playSeg = null; return; }
+  const want = g.s + (P - g.t);
+  if (force || playSeg !== g || Math.abs(vid.currentTime - want) > 0.25) vid.currentTime = want;
+  playSeg = g;
+  if (vid.paused) vid.play().catch(() => {});
+}
+function startPlay() { if (P >= total() - 0.03) P = 0; playing = true; lastTick = performance.now(); renderPlay(); syncPlay(true); }
+function stopPlay() { playing = false; playSeg = null; vid.pause(); renderPlay(); }
+function togglePlay() { if (!cur || $('vwrap').hidden) return; playing ? stopPlay() : startPlay(); }
+(function loop(now) {
+  if (cur && playing) {
+    const dt = Math.min(0.1, (now - lastTick) / 1000); lastTick = now;
+    const g = segAt(P);
+    if (g && playSeg === g && !vid.paused) P = g.t + (vid.currentTime - g.s);   // trong đoạn: theo video
+    else P += dt;                                                               // chỗ trống: theo đồng hồ
+    if (g && P >= segEnd(g) - 0.02) P = segEnd(g);
+    if (P >= total() - 0.01) { P = total(); stopPlay(); showFrameAt(Math.max(0, P - 0.01)); }
+    else syncPlay(false);
+    // vạch đỏ ra khỏi khung nhìn thì cuộn theo
+    const x = P * pps;
+    if (x < tl.scrollLeft || x > tl.scrollLeft + tl.clientWidth - 30) tl.scrollLeft = x - 40;
+  } else lastTick = now;
+  if (cur) { $('ph').style.left = P * pps + 'px'; $('tcCur').textContent = fmtTc(P); }
+  requestAnimationFrame(loop);
+})(performance.now());
 $('playBtn').onclick = togglePlay;
 $('player').onclick = togglePlay;
 $('toIn').onclick = () => seekTo(0);
@@ -336,12 +354,14 @@ $('toOut').onclick = () => seekTo(total());
 // --- thao tác đoạn ---
 function splitAt() {
   if (!cur) return;
-  const p = pos(), L = locate(p), g = segs[L.i];
-  if (L.src - g.s < 0.1 || g.e - L.src < 0.1) { toast('Đưa vạch đỏ vào giữa đoạn để cắt'); return; }
+  const g = segAt(P);
+  if (!g) { toast('Vạch đỏ đang ở chỗ trống, hãy đưa vào giữa 1 đoạn'); return; }
+  const src = g.s + (P - g.t);
+  if (src - g.s < 0.1 || g.e - src < 0.1) { toast('Đưa vạch đỏ vào giữa đoạn để cắt'); return; }
   pushHist();
-  const a = newSeg(g.s, L.src), b = newSeg(L.src, g.e);
-  segs.splice(L.i, 1, a, b);
-  selId = b.id; ci = L.i + 1; vid.currentTime = b.s;
+  const a = newSeg(g.s, src, g.t), b = newSeg(src, g.e, P);
+  segs.splice(segs.indexOf(g), 1, a, b);
+  selId = b.id;
   renderSegs(true);
   segEl(b).classList.add('pop'); setTimeout(() => segEl(b).classList.remove('pop'), 300);
 }
@@ -350,103 +370,148 @@ function deleteSel() {
   if (i < 0) return;
   if (segs.length < 2) { toast('Phải còn ít nhất 1 đoạn'); return; }
   pushHist();
-  const p = startOf(i);
-  segs.splice(i, 1);
-  selId = (segs[i] || segs[i - 1]).id;
-  renderSegs(false);   // các khối sau trượt sang trái khít lại
-  seekTo(Math.min(p, total()));
+  segs.splice(i, 1);                 // để lại khoảng trống, không tự dồn
+  selId = null;
+  renderSegs(false);
+  seekTo(Math.min(P, total()));
 }
 $('splitBtn').onclick = splitAt;
 $('delSegBtn').onclick = deleteSel;
 $('undoBtn').onclick = undo;
-$('resetCut').onclick = () => { if (!cur) return; pushHist(); segs = [newSeg(0, cur.duration)]; selId = null; ci = 0; vid.currentTime = 0; renderSegs(true); };
+$('resetCut').onclick = () => { if (!cur) return; pushHist(); segs = [newSeg(0, cur.duration, 0)]; selId = null; fitZoom(); renderSegs(true); seekTo(0); };
 
-// --- chuột trên timeline: tua / chọn / tỉa / kéo đổi chỗ ---
-function timeAt(x) { const r = track.getBoundingClientRect(); return Math.min(1, Math.max(0, (x - r.left) / r.width)) * total(); }
+// --- hít (snap) & chống chồng đoạn ---
+const SNAP_PX = 10;
+function snapPoints(except) {
+  const pts = [0, P];
+  segs.forEach(g => { if (g !== except) pts.push(g.t, segEnd(g)); });
+  return pts;
+}
+function snapMove(g, t) {           // t: vị trí đề xuất cho đầu đoạn
+  const len = segLen(g), lim = SNAP_PX / pps;
+  let best = null;
+  for (const p of snapPoints(g)) {
+    for (const [edge, nt] of [[t, p], [t + len, p - len]]) {
+      const d = Math.abs(edge - p);
+      if (d <= lim && (!best || d < best.d)) best = { d, t: nt, at: p };
+    }
+  }
+  return best ? { t: Math.max(0, best.t), at: best.at } : { t: Math.max(0, t), at: null };
+}
+function overlaps(g, t) { const e = t + segLen(g); return segs.some(o => o !== g && t < segEnd(o) - 1e-3 && e > o.t + 1e-3); }
+function freeSpot(g, t) {           // nếu chồng lên đoạn khác: đặt sát mép gần nhất còn trống
+  if (!overlaps(g, t)) return t;
+  const len = segLen(g), cands = [];
+  segs.forEach(o => { if (o !== g) { cands.push(segEnd(o)); if (o.t - len >= 0) cands.push(o.t - len); } });
+  cands.sort((a, b) => Math.abs(a - t) - Math.abs(b - t));
+  return cands.find(c => !overlaps(g, c)) ?? null;
+}
+function showSnap(at) { const l = $('snapLine'); if (at == null) { l.hidden = true; return; } l.hidden = false; l.style.left = at * pps + 'px'; }
+
+// --- chuột trên timeline ---
+function timeAt(x) { const r = tl.getBoundingClientRect(); return Math.max(0, (x - r.left + tl.scrollLeft) / pps); }
 let act = null;
+tl.addEventListener('contextmenu', e => e.preventDefault());
+tl.addEventListener('wheel', e => { if (!cur) return; e.preventDefault(); userZoomed = true; zoomAt(e.deltaY < 0 ? 1.18 : 1 / 1.18, e.clientX); }, { passive: false });
 tl.addEventListener('pointerdown', e => {
-  if (!cur || e.button !== 0) return;
-  const el = e.target.closest('.segk');
+  if (!cur) return;
   tl.setPointerCapture(e.pointerId);
-  if (e.target.classList.contains('sg') && el) {               // tỉa mép
-    const g = segs.find(x => String(x.id) === el.dataset.id);
-    pushHist();
-    act = { type: 'trim', g, side: e.target.classList.contains('l') ? 's' : 'e', el };
-    el.classList.add('trimming'); vid.pause();
+  if (e.button === 2 || e.button === 1) { act = { type: 'pan', sx: e.clientX, sl: tl.scrollLeft }; tl.classList.add('panning'); return; }
+  if (e.button !== 0) return;
+  const el = e.target.closest('.segk');
+  const g = el && segs.find(x => String(x.id) === el.dataset.id);
+  if (g && e.target.classList.contains('sg')) {               // tỉa mép
+    pushHist(); stopPlay();
+    act = { type: 'trim', g, el, side: e.target.classList.contains('l') ? 's' : 'e', sx: e.clientX, o: { ...g } };
+    el.classList.add('trimming');
     return;
   }
-  if (el) {                                                     // có thể là bấm chọn hoặc kéo đổi chỗ
-    const g = segs.find(x => String(x.id) === el.dataset.id);
-    act = { type: 'press', g, el, sx: e.clientX, t: timeAt(e.clientX) };
-    return;
-  }
-  act = { type: 'seek' }; tl.classList.add('scrub'); vid.pause(); seekTo(timeAt(e.clientX));
+  if (g) { act = { type: 'press', g, el, sx: e.clientX, t: timeAt(e.clientX) }; return; }
+  act = { type: 'seek' }; stopPlay(); seekTo(timeAt(e.clientX));
 });
 tl.addEventListener('pointermove', e => {
   if (!act) return;
+  if (act.type === 'pan') { tl.scrollLeft = act.sl - (e.clientX - act.sx); return; }
   if (act.type === 'seek') { seekTo(timeAt(e.clientX)); return; }
-  if (act.type === 'trim') {
-    const { g, side } = act, srcD = cur.duration;
-    const r = track.getBoundingClientRect(), T = total();
-    // đổi khoảng cách kéo (px) ra giây theo tỉ lệ hiện tại của timeline
-    const dt = (e.movementX || 0) / r.width * T;
-    if (side === 's') g.s = Math.min(g.e - 0.1, Math.max(0, g.s + dt));
-    else g.e = Math.max(g.s + 0.1, Math.min(srcD, g.e + dt));
-    ci = segs.indexOf(g); vid.currentTime = side === 's' ? g.s : g.e;
-    renderSegs(true);
-    return;
-  }
-  if (act.type === 'press' && Math.abs(e.clientX - act.sx) > 4) startReorder(act, e);
-  if (act.type === 'drag') moveReorder(e);
+  if (act.type === 'trim') { trimMove(act, e); return; }
+  if (act.type === 'press' && Math.abs(e.clientX - act.sx) > 4) startMove(act, e);
+  if (act.type === 'move') moveMove(act, e);
 });
-tl.addEventListener('pointerup', e => {
-  if (!act) return;
+tl.addEventListener('pointerup', () => {
   const a = act; act = null;
-  tl.classList.remove('scrub');
-  if (a.type === 'trim') { a.el.classList.remove('trimming'); renderSegs(true); }
-  else if (a.type === 'press') { selId = a.g.id; vid.pause(); seekTo(a.t); renderSegs(false); }
-  else if (a.type === 'drag') endReorder(a, false);
+  if (!a) return;
+  tl.classList.remove('panning');
+  if (a.type === 'trim') { a.el.classList.remove('trimming'); showSnap(null); renderSegs(true); seekTo(P); }
+  else if (a.type === 'press') { selId = a.g.id; stopPlay(); seekTo(a.t); renderSegs(false); }
+  else if (a.type === 'move') endMove(a, false);
 });
-tl.addEventListener('pointercancel', () => { if (act && act.type === 'drag') endReorder(act, true); act = null; });
+tl.addEventListener('pointercancel', () => { if (act && act.type === 'move') endMove(act, true); act = null; tl.classList.remove('panning'); });
 
-// Kéo đổi chỗ: khối đang kéo đi theo chuột, các khối khác trượt (transform) nhường ô nét đứt
-function startReorder(a, e) {
-  pushHist();
-  vid.pause();
-  const r = track.getBoundingClientRect();
-  a.type = 'drag';
-  a.from = segs.indexOf(a.g);
-  a.order = segs.slice();
-  a.grab = e.clientX - (r.left + startOf(a.from) / total() * r.width);
+function trimMove(a, e) {
+  const { g, o, side } = a, srcD = cur.duration, dt = (e.clientX - a.sx) / pps;
+  const ord = ordered(), i = ord.indexOf(g), prev = ord[i - 1], next = ord[i + 1];
+  if (side === 's') {            // tỉa đầu: mép phải đứng yên
+    let ns = Math.min(o.e - 0.1, Math.max(0, o.s + dt));
+    let nt = o.t + (ns - o.s);
+    const minT = prev ? segEnd(prev) : 0;
+    if (nt < minT) { ns += minT - nt; nt = minT; }
+    const sn = snapPoints(g).find(p => Math.abs(p - nt) * pps <= SNAP_PX && p >= minT);
+    if (sn != null && ns + (sn - nt) >= 0 && ns + (sn - nt) < o.e - 0.1) { ns += sn - nt; nt = sn; showSnap(sn); } else showSnap(null);
+    g.s = ns; g.t = nt;
+    vid.currentTime = g.s;
+  } else {                       // tỉa cuối
+    let ne = Math.max(o.s + 0.1, Math.min(srcD, o.e + dt));
+    const maxEnd = next ? next.t : Infinity;
+    if (g.t + (ne - g.s) > maxEnd) ne = g.s + (maxEnd - g.t);
+    const end = g.t + (ne - g.s);
+    const sn = snapPoints(g).find(p => Math.abs(p - end) * pps <= SNAP_PX && p <= maxEnd);
+    if (sn != null && g.s + (sn - g.t) <= srcD && sn - g.t > 0.1) { ne = g.s + (sn - g.t); showSnap(sn); } else showSnap(null);
+    g.e = ne;
+    vid.currentTime = Math.max(0, g.e - 0.01);
+  }
+  $('gapCover').hidden = true;
+  renderSegs(true);
+}
+
+// Kéo di chuyển đoạn: đi theo chuột, tự hít vào mép đoạn khác / đầu timeline / vạch đỏ;
+// ô nét đứt cho biết chỗ sẽ đặt (không chồng lên đoạn khác)
+function startMove(a, e) {
+  pushHist(); stopPlay();
+  a.type = 'move';
+  a.grab = timeAt(e.clientX) - a.g.t;
+  a.orig = a.g.t;
   selId = a.g.id;
   renderSegs(false);
   a.el.classList.add('lift');
   const sl = document.createElement('div'); sl.className = 'segslot'; track.appendChild(sl);
-  layout(a.order, { dragging: a.g, slot: a.g });
-  moveReorder(e);
+  moveMove(a, e);
 }
-function moveReorder(e) {
-  const a = act; if (!a) return;
-  const r = track.getBoundingClientRect(), T = total(), W = r.width;
-  const w = segLen(a.g) / T * W;
-  let x = Math.min(W - w, Math.max(0, e.clientX - r.left - a.grab));
-  a.el.style.transform = `translateX(${x + 2}px) translateY(-6px) scale(1.03)`;
-  // tìm vị trí chèn: tâm khối kéo so với tâm các khối còn lại
-  const center = x + w / 2, rest = a.order.filter(g => g !== a.g);
-  let idx = 0, acc = 0;
-  for (const g of rest) { const gw = segLen(g) / T * W; if (center > acc + gw / 2) idx++; acc += gw; }
-  const order = rest.slice(); order.splice(idx, 0, a.g);
-  if (order.some((g, i) => g !== a.order[i])) { a.order = order; layout(order, { dragging: a.g, slot: a.g }); }
+function moveMove(a, e) {
+  const raw = timeAt(e.clientX) - a.grab;
+  const sn = snapMove(a.g, raw);
+  showSnap(sn.at);
+  a.el.style.transform = `translateX(${sn.t * pps + 1}px) translateY(-6px) scale(1.02)`;
+  const spot = freeSpot(a.g, sn.t);
+  a.spot = spot;
+  a.el.classList.toggle('bad', spot == null);
+  const sl = track.querySelector('.segslot');
+  if (sl) {
+    sl.hidden = spot == null;
+    if (spot != null) { sl.style.width = Math.max(4, segLen(a.g) * pps - 2) + 'px'; sl.style.transform = `translateX(${spot * pps + 1}px)`; }
+  }
+  // kéo sát mép khung nhìn thì tự cuộn
+  const r = tl.getBoundingClientRect();
+  if (e.clientX > r.right - 30) tl.scrollLeft += 12; else if (e.clientX < r.left + 30) tl.scrollLeft -= 12;
 }
-function endReorder(a, cancel) {
-  if (!cancel) segs = a.order;
-  else segs = segs.slice();
+function endMove(a, cancel) {
   const sl = track.querySelector('.segslot'); if (sl) sl.remove();
-  a.el.classList.remove('lift');
-  ci = segs.indexOf(a.g); vid.currentTime = a.g.s;
-  if (!cancel && a.order.indexOf(a.g) === a.from) hist.pop();   // thả lại chỗ cũ: không tính là 1 bước
-  renderSegs(false);   // bay về đúng ô
+  showSnap(null);
+  a.el.classList.remove('lift', 'bad');
+  if (cancel || a.spot == null) a.g.t = a.orig; else a.g.t = a.spot;
+  if (Math.abs(a.g.t - a.orig) < 1e-6) hist.pop();      // không đổi gì: không tính là 1 bước
+  renderSegs(false);   // bay vào đúng chỗ
   a.el.classList.add('pop'); setTimeout(() => a.el.classList.remove('pop'), 300);
+  seekTo(P);
 }
 
 // GIF
@@ -465,18 +530,18 @@ function syncGifChips() {
 
 $('saveCut').onclick = async () => {
   if (!cur) return;
-  vid.pause();
+  stopPlay();
   const ow = $('overwrite').checked && !$('owRow').hidden;
   if (ow) { vid.removeAttribute('src'); vid.load(); }
-  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e })), overwrite: ow, original: cur.file });
+  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), overwrite: ow, original: cur.file });
   if (!r.ok) { toast('Cắt bị lỗi: ' + r.error, 'error'); if (ow) openEditor(cur.file); return; }
   toast('Đã lưu ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
   openEditor(r.file);
 };
 $('saveGif').onclick = async () => {
   if (!cur) return;
-  vid.pause();
-  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e })), fps: gifFps(), scale: gifScale(), original: cur.file });
+  stopPlay();
+  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), fps: gifFps(), scale: gifScale(), original: cur.file });
   if (!r.ok) { toast('Xuất GIF bị lỗi: ' + r.error, 'error'); return; }
   S.gifFps = gifFps(); S.gifScale = gifScale();
   toast('Đã xuất ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
@@ -485,7 +550,7 @@ $('showFile').onclick = () => cur && api.invoke('files:openDir', cur.file);
 $('delFile').onclick = async () => {
   if (!cur || !confirm('Xoá clip "' + cur.name + '"? File sẽ được chuyển vào Thùng rác.')) return;
   const f = cur.file;
-  vid.pause(); vid.removeAttribute('src'); vid.load();
+  stopPlay(); vid.removeAttribute('src'); vid.load();
   await api.invoke('files:delete', f);
   toast('Đã xoá clip');
   showView('home');
@@ -611,8 +676,8 @@ addEventListener('keydown', e => {
   else if (e.ctrlKey && k === 'z') { undo(); e.preventDefault(); }
   else if (k === 's' && !e.ctrlKey) splitAt();
   else if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
-  else if (e.key === 'ArrowLeft') { vid.pause(); seekTo(pos() - (e.shiftKey ? 1 : fd)); e.preventDefault(); }
-  else if (e.key === 'ArrowRight') { vid.pause(); seekTo(pos() + (e.shiftKey ? 1 : fd)); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { stopPlay(); seekTo(pos() - (e.shiftKey ? 1 : fd)); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { stopPlay(); seekTo(pos() + (e.shiftKey ? 1 : fd)); e.preventDefault(); }
   else if (e.key === 'Home') seekTo(0);
   else if (e.key === 'End') seekTo(total());
 });

@@ -3,16 +3,19 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
-const { Recorder } = require('./lib/recorder');
+const { Recorder, BT709 } = require('./lib/recorder');
 const { run, probe, ffmpegPath } = require('./lib/ff');
 const { joinFiles, muxSegment } = require('./lib/compose');
 const { windowRect, hwndFromSourceId } = require('./lib/winrect');
+const { renderSegments, makeGif, cleanSegs } = require('./lib/segments');
 
 const APP_TITLE = 'Mon Cam';
 const HEADER_H = 58;
 const isWin = process.platform === 'win32';
 
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
+// Màn hình bật HDR: không cho video đi đường overlay phần cứng (đường đó hiểu sai màu video SDR → cháy sáng)
+app.commandLine.appendSwitch('disable-direct-composition-video-overlays');
 
 // ---------- Cài đặt ----------
 const userDir = app.getPath('userData');
@@ -444,7 +447,7 @@ async function stopRecording() {
       out = uniquePath(settings.outDir, base, '.gif');
       const info = await probe(source);
       send('busy', { text: 'Đang tạo GIF…', p: 0 });
-      await makeGif(source, out, [{ s: 0, e: info.duration }], settings.gifFps, settings.gifScale, p => send('busy', { text: 'Đang tạo GIF…', p }));
+      await makeGif(source, out, [{ s: 0, e: info.duration, t: 0 }], settings.gifFps, settings.gifScale, p => send('busy', { text: 'Đang tạo GIF…', p }));
     } else {
       out = uniquePath(settings.outDir, base, '.mp4');
       let parts = segs.map(s => s.file);
@@ -631,45 +634,6 @@ async function ensureThumb(file) {
 function gifSourceOf(file) {
   const s = path.join(dirs.sources, path.basename(file, '.gif') + '.mp4');
   return fs.existsSync(s) ? s : null;
-}
-
-// Các đoạn [{s,e}] (giây trong clip gốc) → mỗi đoạn là 1 input có -ss/-t (tua nhanh), rồi ghép bằng concat
-function segInputs(src, segs) {
-  const a = [];
-  segs.forEach(g => a.push('-ss', g.s.toFixed(3), '-t', Math.max(0.05, g.e - g.s).toFixed(3), '-i', src));
-  return a;
-}
-function segsDur(segs) { return segs.reduce((t, g) => t + Math.max(0, g.e - g.s), 0); }
-
-// Ghép các đoạn thành MP4 (re-encode để cắt chính xác từng khung)
-async function renderSegments(src, segs, out, { preset = 'veryfast', crf = 18, onP } = {}) {
-  const info = await probe(src);
-  const hasA = !!(info && info.hasAudio);
-  const n = segs.length, d = segsDur(segs);
-  let fc = '';
-  for (let i = 0; i < n; i++) fc += `[${i}:v:0]setpts=PTS-STARTPTS[v${i}];` + (hasA ? `[${i}:a:0]asetpts=PTS-STARTPTS[a${i}];` : '');
-  for (let i = 0; i < n; i++) fc += `[v${i}]` + (hasA ? `[a${i}]` : '');
-  fc += `concat=n=${n}:v=1:a=${hasA ? 1 : 0}[v]` + (hasA ? '[a]' : '');
-  await run([...segInputs(src, segs), '-filter_complex', fc, '-map', '[v]', ...(hasA ? ['-map', '[a]', '-c:a', 'aac', '-b:a', '192k'] : []),
-    '-c:v', 'libx264', '-preset', preset, '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
-    { onTime: t => onP && onP(Math.min(1, t / d)) });
-}
-
-async function makeGif(src, out, segs, fps, scale, onP) {
-  const d = Math.max(0.1, segsDur(segs)), n = segs.length;
-  fps = Math.min(50, fps);
-  const k = Math.max(10, Math.min(100, scale)) / 100;
-  let fc = '';
-  for (let i = 0; i < n; i++) fc += `[${i}:v:0]setpts=PTS-STARTPTS[v${i}];`;
-  for (let i = 0; i < n; i++) fc += `[v${i}]`;
-  fc += `concat=n=${n}:v=1:a=0,fps=${fps},scale=trunc(iw*${k}/2)*2:-2:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`;
-  const tmp = out + '.part.gif';
-  await run([...segInputs(src, segs), '-filter_complex', fc, '-loop', '0', tmp], { onTime: t => onP && onP(Math.min(1, t / d)) });
-  fs.renameSync(tmp, out);
-}
-function cleanSegs(segs, start, end) {
-  const list = Array.isArray(segs) && segs.length ? segs : [{ s: start, e: end }];
-  return list.map(g => ({ s: Math.max(0, +g.s || 0), e: +g.e || 0 })).filter(g => g.e - g.s >= 0.05);
 }
 
 // ---------- IPC ----------
