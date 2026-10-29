@@ -43,6 +43,7 @@ function renderSettings() {
   $('audioRow').classList.toggle('disabled', gif);
   $('outDir').textContent = S.outDir;
   $('outDir').title = S.outDir;
+  $('shotDir').textContent = S.shotDir || ''; $('shotDir').title = S.shotDir || '';
   renderSum();
   refreshFoot();
 }
@@ -325,6 +326,7 @@ document.querySelectorAll('.scrim').forEach(s => {
   s.addEventListener('click', e => { if (e.target === s || e.target.closest('[data-close]')) hideScrim(s); });
 });
 $('setBtn').onclick = () => openDlg('dlgSettings');
+$('pickShotDir').onclick = async () => { const d = await api.invoke('files:pickShotDir'); if (d) { S.shotDir = d; renderSettings(); } };
 $('pickDir').onclick = async () => { const d = await api.invoke('files:pickDir'); if (d) { S.outDir = d; renderSettings(); loadRecent(); } };
 $('wnBtn').onclick = openWhatsNew;
 

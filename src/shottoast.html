@@ -3,12 +3,24 @@
 <link rel="stylesheet" href="base.css">
 <style>
 html,body{background:transparent}
+.t.saved{cursor:pointer;animation:in .3s var(--ease-out) forwards,out .3s ease 4.2s forwards}
+.t.saved:hover{border-color:var(--red)}
 .t{position:fixed;inset:0;display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;padding:10px 12px;opacity:0;transform:translateY(8px);animation:in .3s var(--ease-out) forwards,out .3s ease 2.2s forwards}
 @keyframes in{to{opacity:1;transform:none}}
 @keyframes out{to{opacity:0;transform:translateY(8px)}}
 .th{width:96px;height:62px;border-radius:4px;background:#15161a center/contain no-repeat;flex:0 0 auto;box-shadow:inset 0 0 0 1px var(--line)}
 b{display:block;font-size:13px}span{color:var(--muted);font-size:12px}
 </style></head>
-<body><div class="t"><div class="th" id="th"></div><div><b id="tt">Đã copy ảnh</b><span>Nhấn Ctrl+V để dán</span></div></div>
-<script>api.on('toast:data', d => { document.getElementById('th').style.backgroundImage = `url("${d.url}")`; document.getElementById('tt').textContent = `Đã copy ảnh ${d.w}×${d.h}`; });</script>
+<body><div class="t"><div class="th" id="th"></div><div><b id="tt">Đã copy ảnh</b><span id="ts">Nhấn Ctrl+V để dán</span></div></div>
+<script>
+api.on('toast:data', d => {
+  document.getElementById('th').style.backgroundImage = `url("${d.url}")`;
+  document.getElementById('tt').textContent = (d.file ? 'Đã lưu & copy ảnh ' : 'Đã copy ảnh ') + `${d.w}×${d.h}`;
+  if (d.file) {
+    document.getElementById('ts').textContent = 'Bấm vào đây để mở thư mục';
+    const t = document.querySelector('.t'); t.classList.add('saved');
+    t.onclick = () => api.send('toast:open', d.file);
+  }
+});
+</script>
 </body></html>

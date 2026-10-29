@@ -1,11 +1,14 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "date": "2026-10-29",
   "new": [
-    "Chụp ảnh màn hình: bấm PrtSc (hoặc nút Chụp ảnh), kéo chọn vùng, ảnh được copy sẵn để dán bằng Ctrl+V",
-    "Vẽ ghi chú lên ảnh chụp: mũi tên, khung, chữ, bút vẽ, bút tô sáng, làm mờ để che thông tin, 6 màu, hoàn tác",
-    "Phím dự phòng Ctrl+Shift+S khi phím PrtSc đang bị Windows dùng cho Snipping Tool"
+    "Mon Cam chạy ở khay hệ thống: bấm X chỉ ẩn xuống khay, PrtSc và F12 vẫn dùng được. Chuột phải icon ở khay để chụp, quay hoặc thoát hẳn",
+    "Tuỳ chọn chạy cùng Windows (ẩn ở khay) trong Cài đặt",
+    "Nút Lưu (Ctrl+S) trong thanh ghi chú: lưu ảnh PNG và copy luôn; bấm vào ô báo để mở thư mục ảnh",
+    "Chọn thư mục lưu ảnh chụp riêng trong Cài đặt"
   ],
   "improved": [],
-  "fixed": []
+  "fixed": [
+    "Màn hình bật HDR: ảnh chụp và nền màn chọn vùng không còn bị cháy trắng"
+  ]
 }

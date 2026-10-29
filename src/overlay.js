@@ -27,7 +27,7 @@ const TOOL_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl', b: 'blu
 function setupShot() {
   $('bar').style.display = 'none';
   bar = $('shotbar');
-  $('hint').innerHTML = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · Vẽ ghi chú rồi <kbd>Enter</kbd> / <kbd>Ctrl+C</kbd> để copy · <kbd>Esc</kbd> huỷ';
+  $('hint').innerHTML = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · <kbd>Enter</kbd> copy · <kbd>Ctrl+S</kbd> lưu + copy · <kbd>Esc</kbd> huỷ';
   const sw = $('swatches');
   COLORS.forEach(([c, n], i) => {
     const b = document.createElement('button');
@@ -38,7 +38,8 @@ function setupShot() {
   bar.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(Ann.tool === b.dataset.tool ? null : b.dataset.tool));
   $('undo').onclick = () => Ann.undo();
   $('shotCancel').onclick = () => api.send('sel:cancel');
-  $('copyBtn').onclick = doShot;
+  $('copyBtn').onclick = () => doShot(false);
+  $('saveBtn').onclick = () => doShot(true);
   Ann.init(img, () => sel, () => {});
 }
 function setTool(t) {
@@ -49,10 +50,10 @@ function setTool(t) {
   document.body.classList.toggle('tool-text', t === 'text');
   draw();
 }
-function doShot() {
+function doShot(save) {
   if (!sel || sel.w < 2 || sel.h < 2 || !img) return;
   const r = Ann.export();
-  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId });
+  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true });
 }
 
 function sizeCanvas() { dim.width = innerWidth; dim.height = innerHeight; }
@@ -193,7 +194,8 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('.ann-text')) return;
   if (cfg.shot) {
     const k = e.key.toLowerCase();
-    if (e.ctrlKey && k === 'c') { doShot(); e.preventDefault(); return; }
+    if (e.ctrlKey && k === 'c') { doShot(false); e.preventDefault(); return; }
+    if (e.ctrlKey && k === 's') { doShot(true); e.preventDefault(); return; }
     if (e.ctrlKey && k === 'z') { Ann.undo(); e.preventDefault(); return; }
     if (sel && !e.ctrlKey && !e.altKey && TOOL_KEYS[k]) { setTool(Ann.tool === TOOL_KEYS[k] ? null : TOOL_KEYS[k]); return; }
   }

@@ -118,11 +118,15 @@
       <label class="row" id="audioRow"><span class="lbl" data-i="vol">Âm thanh máy</span><input type="checkbox" class="sw" data-key="audio"></label>
     </div>
     <div class="grp"><h4>Phím tắt</h4>
-      <div class="hk"><span>Bắt đầu (vùng gần nhất) / Dừng & lưu</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd><span>Chụp ảnh (copy vào bộ nhớ tạm)</span><kbd>PrtSc</kbd></div>
+      <div class="hk"><span>Bắt đầu (vùng gần nhất) / Dừng & lưu</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd><span>Chụp ảnh · trong lúc chụp: <kbd>Enter</kbd> copy, <kbd>Ctrl+S</kbd> lưu</span><kbd>PrtSc</kbd></div>
       <div class="hint" id="prtHint">Nếu bấm <kbd>PrtSc</kbd> mà Windows mở Snipping Tool: vào <b>Settings → Accessibility → Keyboard</b>, tắt <b>"Use the Print screen key to open screen capture"</b>. Hoặc dùng phím dự phòng <kbd>Ctrl+Shift+S</kbd>.</div></div>
-    <div class="grp"><h4>Thư mục lưu</h4>
+    <div class="grp"><h4>Thư mục lưu video</h4>
       <div class="path"><span class="sel ell" id="outDir"></span><button class="btn" id="pickDir">Đổi…</button></div></div>
+    <div class="grp"><h4>Thư mục lưu ảnh chụp</h4>
+      <div class="path"><span class="sel ell" id="shotDir"></span><button class="btn" id="pickShotDir">Đổi…</button></div></div>
     <div class="grp"><h4>Khác</h4>
+      <label class="row" title="Bấm X chỉ ẩn xuống khay hệ thống, phím PrtSc / F12 vẫn dùng được"><span>Bấm X thì thu xuống khay (PrtSc vẫn chụp được)</span><input type="checkbox" class="sw" data-key="closeToTray"></label>
+      <label class="row"><span>Chạy cùng Windows (ẩn ở khay)</span><input type="checkbox" class="sw" data-key="launchAtLogin"></label>
       <label class="row"><span>Đếm ngược 3 giây trước khi quay</span><input type="checkbox" class="sw" data-key="countdown"></label>
       <label class="row"><span>Thu nhỏ Mon Cam khi đang quay</span><input type="checkbox" class="sw" data-key="hideWhileRec"></label>
       <label class="row"><span>Tự mở màn Xem lại sau khi dừng</span><input type="checkbox" class="sw" data-key="openEditorAfter"></label>
