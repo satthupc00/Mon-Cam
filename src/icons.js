@@ -31,6 +31,7 @@ const ICONS = {
   hl:'<path d="M9 11l6 6M4 20l3-1 10-10-3-3L4 16z"/><path d="M14 20h6"/>',
   blur:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h2v2H8zM12 8h2v2h-2zM8 12h2v2H8zM14 12h2v2h-2zM10 14h2v2h-2z" fill="currentColor" stroke="none"/>',
   undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
 };
 function icon(name, cls) {

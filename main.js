@@ -444,7 +444,7 @@ async function stopRecording() {
       out = uniquePath(settings.outDir, base, '.gif');
       const info = await probe(source);
       send('busy', { text: 'Đang tạo GIF…', p: 0 });
-      await makeGif(source, out, 0, info.duration, settings.gifFps, settings.gifScale, p => send('busy', { text: 'Đang tạo GIF…', p }));
+      await makeGif(source, out, [{ s: 0, e: info.duration }], settings.gifFps, settings.gifScale, p => send('busy', { text: 'Đang tạo GIF…', p }));
     } else {
       out = uniquePath(settings.outDir, base, '.mp4');
       let parts = segs.map(s => s.file);
@@ -473,24 +473,37 @@ async function stopRecording() {
 function notify(text, kind) { send('toast', { text, kind }); }
 function shortErr(e) { return String(e && e.message || e).split('\n').filter(Boolean).slice(-1)[0].slice(0, 160); }
 
-// ---------- Hiệu ứng click (tuỳ chọn) ----------
-let hook = null;
-function startClickFx(dip) {
-  try {
-    if (!hook) hook = require('uiohook-napi');
-  } catch { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
-  fxWin = makeFloat({ x: dip.x, y: dip.y, width: dip.width, height: dip.height }, 'clickfx.html', { clickThrough: true, protect: false });
-  hook.uIOhook.removeAllListeners('mousedown');
-  hook.uIOhook.on('mousedown', ev => {
-    if (!fxWin || fxWin.isDestroyed()) return;
-    const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
-    fxWin.webContents.send('fx:click', { x: p.x - dip.x, y: p.y - dip.y, right: ev.button === 2 });
+// ---------- Bắt phím/chuột cấp thấp (uiohook) ----------
+// Windows giữ riêng phím F12 cho trình gỡ lỗi nên không đăng ký phím tắt thường được →
+// nghe F12 / Shift+F12 qua hook. Hook này cũng dùng cho hiệu ứng click khi quay.
+let hook = null, fxDip = null;
+function setupHook() {
+  try { hook = require('uiohook-napi'); } catch { hook = null; return false; }
+  const { uIOhook, UiohookKey } = hook;
+  const held = new Set();
+  uIOhook.on('keydown', ev => {
+    if (held.has(ev.keycode)) return;          // giữ phím thì không lặp lại
+    held.add(ev.keycode);
+    if (ev.keycode !== UiohookKey.F12) return;
+    if (ev.shiftKey) { togglePause(); return; }
+    if (rec) stopRecording(); else if (!selecting) startMode('region');
   });
-  try { hook.uIOhook.start(); } catch {}
+  uIOhook.on('keyup', ev => held.delete(ev.keycode));
+  uIOhook.on('mousedown', ev => {
+    if (!fxDip || !fxWin || fxWin.isDestroyed()) return;
+    const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
+    fxWin.webContents.send('fx:click', { x: p.x - fxDip.x, y: p.y - fxDip.y, right: ev.button === 2 });
+  });
+  try { uIOhook.start(); return true; } catch { hook = null; return false; }
 }
-function stopClickFx() {
-  if (hook) { try { hook.uIOhook.stop(); } catch {} hook.uIOhook.removeAllListeners('mousedown'); }
+
+// ---------- Hiệu ứng click (tuỳ chọn) ----------
+function startClickFx(dip) {
+  if (!hook) { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
+  fxDip = dip;
+  fxWin = makeFloat({ x: dip.x, y: dip.y, width: dip.width, height: dip.height }, 'clickfx.html', { clickThrough: true, protect: false });
 }
+function stopClickFx() { fxDip = null; }
 
 // ---------- Bắt đầu theo chế độ ----------
 async function startMode(mode, extra) {
@@ -588,11 +601,13 @@ function applyLoginItem() {
 }
 
 // ---------- Phím tắt ----------
-let shotKeyOk = true;
+let shotKeyOk = true, hookOk = false;
 function registerKeys() {
   globalShortcut.unregisterAll();
-  globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('region'); });
-  globalShortcut.register('Shift+F12', togglePause);
+  if (!hookOk) {   // không có hook (máy khác Windows): thử phím tắt thường
+    globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('region'); });
+    globalShortcut.register('Shift+F12', togglePause);
+  }
   globalShortcut.register('CommandOrControl+Shift+R', () => { if (!rec) startMode('region'); });
   shotKeyOk = globalShortcut.register('PrintScreen', startShot);
   globalShortcut.register('CommandOrControl+Shift+S', startShot);   // phím dự phòng khi PrtSc bị Windows giữ
@@ -618,15 +633,43 @@ function gifSourceOf(file) {
   return fs.existsSync(s) ? s : null;
 }
 
-async function makeGif(src, out, start, end, fps, scale, onP) {
-  const dur = Math.max(0.1, end - start);
+// Các đoạn [{s,e}] (giây trong clip gốc) → mỗi đoạn là 1 input có -ss/-t (tua nhanh), rồi ghép bằng concat
+function segInputs(src, segs) {
+  const a = [];
+  segs.forEach(g => a.push('-ss', g.s.toFixed(3), '-t', Math.max(0.05, g.e - g.s).toFixed(3), '-i', src));
+  return a;
+}
+function segsDur(segs) { return segs.reduce((t, g) => t + Math.max(0, g.e - g.s), 0); }
+
+// Ghép các đoạn thành MP4 (re-encode để cắt chính xác từng khung)
+async function renderSegments(src, segs, out, { preset = 'veryfast', crf = 18, onP } = {}) {
+  const info = await probe(src);
+  const hasA = !!(info && info.hasAudio);
+  const n = segs.length, d = segsDur(segs);
+  let fc = '';
+  for (let i = 0; i < n; i++) fc += `[${i}:v:0]setpts=PTS-STARTPTS[v${i}];` + (hasA ? `[${i}:a:0]asetpts=PTS-STARTPTS[a${i}];` : '');
+  for (let i = 0; i < n; i++) fc += `[v${i}]` + (hasA ? `[a${i}]` : '');
+  fc += `concat=n=${n}:v=1:a=${hasA ? 1 : 0}[v]` + (hasA ? '[a]' : '');
+  await run([...segInputs(src, segs), '-filter_complex', fc, '-map', '[v]', ...(hasA ? ['-map', '[a]', '-c:a', 'aac', '-b:a', '192k'] : []),
+    '-c:v', 'libx264', '-preset', preset, '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
+    { onTime: t => onP && onP(Math.min(1, t / d)) });
+}
+
+async function makeGif(src, out, segs, fps, scale, onP) {
+  const d = Math.max(0.1, segsDur(segs)), n = segs.length;
   fps = Math.min(50, fps);
-  const s = Math.max(10, Math.min(100, scale)) / 100;
-  const vf = `fps=${fps},scale=trunc(iw*${s}/2)*2:-2:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`;
+  const k = Math.max(10, Math.min(100, scale)) / 100;
+  let fc = '';
+  for (let i = 0; i < n; i++) fc += `[${i}:v:0]setpts=PTS-STARTPTS[v${i}];`;
+  for (let i = 0; i < n; i++) fc += `[v${i}]`;
+  fc += `concat=n=${n}:v=1:a=0,fps=${fps},scale=trunc(iw*${k}/2)*2:-2:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`;
   const tmp = out + '.part.gif';
-  await run(['-ss', start.toFixed(3), '-t', dur.toFixed(3), '-i', src, '-vf', vf, '-loop', '0', tmp],
-    { onTime: t => onP && onP(Math.min(1, t / dur)) });
+  await run([...segInputs(src, segs), '-filter_complex', fc, '-loop', '0', tmp], { onTime: t => onP && onP(Math.min(1, t / d)) });
   fs.renameSync(tmp, out);
+}
+function cleanSegs(segs, start, end) {
+  const list = Array.isArray(segs) && segs.length ? segs : [{ s: start, e: end }];
+  return list.map(g => ({ s: Math.max(0, +g.s || 0), e: +g.e || 0 })).filter(g => g.e - g.s >= 0.05);
 }
 
 // ---------- IPC ----------
@@ -695,33 +738,34 @@ function setupIpc() {
     await run(['-i', src, '-an', '-vf', `fps=${fps.toFixed(4)},scale=-2:72,tile=${n}x1`, '-frames:v', '1', out]).catch(() => {});
     return fs.existsSync(out) ? pathToFileURL(out).href : null;
   });
-  ipcMain.handle('media:trim', async (e, { src, start, end, overwrite, original }) => {
-    const dur = Math.max(0.05, end - start);
+  ipcMain.handle('media:trim', async (e, { src, start, end, segs, overwrite, original }) => {
+    const list = cleanSegs(segs, start, end);
+    if (!list.length) return { ok: false, error: 'Không có đoạn nào để lưu' };
     const keep = original && /\.mp4$/i.test(original) ? original : src;
     const out = overwrite && /\.mp4$/i.test(keep) ? keep + '.part.mp4'
       : uniquePath(settings.outDir, path.basename(keep).replace(/\.(mp4|gif)$/i, '') + '_cut', '.mp4');
-    send('busy', { text: 'Đang cắt…', p: 0 });
+    send('busy', { text: 'Đang ghép & lưu…', p: 0 });
     try {
-      await run(['-ss', start.toFixed(3), '-i', src, '-t', dur.toFixed(3), '-map', '0:v:0', '-map', '0:a?',
-        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k',
-        '-movflags', '+faststart', out], { onTime: t => send('busy', { text: 'Đang cắt…', p: Math.min(1, t / dur) }) });
+      await renderSegments(src, list, out, { onP: p => send('busy', { text: 'Đang ghép & lưu…', p }) });
       let final = out;
       if (overwrite && out.endsWith('.part.mp4')) { fs.renameSync(out, keep); final = keep; }
       return { ok: true, file: final };
     } catch (err) { try { fs.rmSync(out, { force: true }); } catch {} return { ok: false, error: shortErr(err) }; }
     finally { send('busy', null); }
   });
-  ipcMain.handle('media:gif', async (e, { src, start, end, fps, scale, original }) => {
+  ipcMain.handle('media:gif', async (e, { src, start, end, segs, fps, scale, original }) => {
     settings.gifFps = fps; settings.gifScale = scale; saveSettings();
+    const list = cleanSegs(segs, start, end);
+    if (!list.length) return { ok: false, error: 'Không có đoạn nào để xuất' };
     const base = path.basename(original || src).replace(/\.(mp4|gif)$/i, '');
     const out = uniquePath(settings.outDir, base + (original && /\.gif$/i.test(original) ? '_cut' : ''), '.gif');
     send('busy', { text: 'Đang xuất GIF…', p: 0 });
     try {
-      await makeGif(src, out, start, end, fps, scale, p => send('busy', { text: 'Đang xuất GIF…', p }));
-      // Giữ lại mp4 gốc để GIF mới cũng mở xem lại được
+      await makeGif(src, out, list, fps, scale, p => send('busy', { text: 'Đang xuất GIF…', p }));
+      // Giữ lại mp4 gốc của GIF để mở xem lại / cắt tiếp được
       if (/\.mp4$/i.test(src)) {
         const s = path.join(dirs.sources, path.basename(out, '.gif') + '.mp4');
-        if (!fs.existsSync(s)) await run(['-ss', start.toFixed(3), '-i', src, '-t', (end - start).toFixed(3), '-c', 'copy', s]).catch(() => {});
+        if (!fs.existsSync(s)) await renderSegments(src, list, s, { preset: 'ultrafast', crf: 16 }).catch(() => {});
       }
       return { ok: true, file: out };
     } catch (err) { return { ok: false, error: shortErr(err) }; }
@@ -761,6 +805,7 @@ app.whenReady().then(() => {
   setupUpdater();
   setupAudioCapture();
   createMain();
+  hookOk = setupHook();
   createTray();
   setTimeout(warmOverlays, 1500);
   screen.on('display-added', warmOverlays); screen.on('display-removed', warmOverlays); screen.on('display-metrics-changed', warmOverlays);
@@ -768,5 +813,5 @@ app.whenReady().then(() => {
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
 });
-app.on('will-quit', () => { globalShortcut.unregisterAll(); stopClickFx(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); if (hook) { try { hook.uIOhook.stop(); } catch {} } });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });

@@ -50,34 +50,35 @@
         <img id="gifImg" alt="" hidden>
       </div>
       <div class="ctrl" id="ctrl">
-        <button class="ibtn" id="toIn" title="Về điểm đầu đoạn cắt (Home)" data-i="skipb"></button>
+        <button class="ibtn" id="toIn" title="Về đầu (Home)" data-i="skipb"></button>
         <button class="ibtn playb" id="playBtn" title="Phát / Dừng (Space)"></button>
-        <button class="ibtn" id="toOut" title="Tới điểm cuối đoạn cắt (End)" data-i="skipf"></button>
+        <button class="ibtn" id="toOut" title="Về cuối (End)" data-i="skipf"></button>
         <span class="tc"><b id="tcCur">00:00.00</b> / <span id="tcDur">00:00.00</span></span>
         <span class="sp"></span>
-        <button class="btn" id="setIn" title="Đặt điểm đầu tại vạch đỏ (I)">[ Đầu <kbd>I</kbd></button>
-        <button class="btn" id="setOut" title="Đặt điểm cuối tại vạch đỏ (O)">Cuối ] <kbd>O</kbd></button>
-        <button class="btn" id="resetCut" title="Bỏ cắt, giữ cả clip">Bỏ cắt</button>
+        <div class="segtools">
+          <button class="btn" id="splitBtn" title="Cắt đôi đoạn tại vạch đỏ (S)" data-i="scissors">Cắt tại đây <kbd>S</kbd></button>
+          <button class="btn" id="delSegBtn" title="Xoá đoạn đang chọn (Delete)" data-i="trash">Xoá đoạn <kbd>Del</kbd></button>
+          <button class="ibtn" id="undoBtn" title="Hoàn tác (Ctrl+Z)" data-i="undo"></button>
+          <button class="ibtn" id="resetCut" title="Bỏ hết, về clip gốc" data-i="reset"></button>
+        </div>
         <span class="vol" title="Âm lượng xem thử"><span data-i="vol"></span><input type="range" id="volume" min="0" max="100" value="80"></span>
       </div>
       <div class="timeline" id="timeline">
-        <div class="tlwrap" id="tl" title="Bấm hoặc kéo để tua">
-          <div class="ruler" id="ruler"></div>
-          <div class="track" id="track"></div>
-          <div class="cutL" id="cutL"></div><div class="cutR" id="cutR"></div>
-          <div class="keep" id="keep"><span class="grip l" id="gripL" title="Kéo để chọn điểm đầu"></span><span class="grip r" id="gripR" title="Kéo để chọn điểm cuối"></span></div>
+        <div class="tlwrap" id="tl">
+          <div class="ruler" id="ruler" title="Bấm hoặc kéo để tua"></div>
+          <div class="segtrack" id="track"></div>
           <div class="playhead" id="ph"></div>
         </div>
-        <div class="trimrow"><span data-i="scissors"></span>Giữ đoạn <b id="keepTxt"></b><span class="sp"></span>Kéo 2 tay cầm vàng để cắt · kéo vạch đỏ để tua · <kbd>←</kbd><kbd>→</kbd> từng khung</div>
+        <div class="trimrow"><span data-i="scissors"></span><span id="segInfo"></span><span class="sp"></span><span class="tlhelp">Bấm chọn đoạn · kéo để đổi chỗ · kéo mép vàng để tỉa · <kbd>←</kbd><kbd>→</kbd> từng khung</span></div>
       </div>
     </div>
     <aside class="eside">
       <div class="grp"><h4>Thông tin</h4>
-        <div class="kv"><span>Tên</span><b id="iName" class="ell"></b><span>Kích thước</span><b id="iSize"></b><span>FPS</span><b id="iFps"></b><span>Thời lượng</span><b id="iDur"></b><span>Dung lượng</span><b id="iBytes"></b></div>
+        <div class="kv"><span>Tên</span><b id="iName" class="ell"></b><span>Kích thước</span><b id="iSize"></b><span>FPS</span><b id="iFps"></b><span>Clip gốc</span><b id="iDur"></b><span>Sau khi cắt</span><b id="iTotal"></b><span>Số đoạn</span><b id="iCount"></b><span>Dung lượng</span><b id="iBytes"></b></div>
       </div>
-      <div class="grp" id="mp4Grp"><h4>Lưu bản cắt</h4>
+      <div class="grp" id="mp4Grp"><h4>Lưu</h4>
         <div class="stack">
-          <button class="btn pri full" id="saveCut" data-i="save">Lưu MP4 đã cắt</button>
+          <button class="btn pri full" id="saveCut" data-i="save">Lưu MP4</button>
           <label class="row" id="owRow"><span class="muted">Ghi đè file gốc</span><input type="checkbox" class="sw" id="overwrite"></label>
         </div>
       </div>

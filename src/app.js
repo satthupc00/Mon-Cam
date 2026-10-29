@@ -144,10 +144,15 @@ api.on('rec:done', d => {
   if (d.open) openEditor(d.file);
 });
 
-// ---------- XEM LẠI & CẮT ----------
+// ---------- XEM LẠI & CẮT (nhiều đoạn) ----------
+// Mỗi đoạn {id,s,e} là 1 khoảng thời gian trong clip gốc. Timeline xếp các đoạn sát nhau theo thứ tự;
+// "thời gian timeline" = cộng dồn độ dài các đoạn.
 const vid = $('vid');
 let cur = null;           // thông tin clip đang mở
-let inT = 0, outT = 0, playing = false;
+let segs = [], selId = null, hist = [], segSeq = 0;
+let ci = 0;               // đoạn đang phát
+let playing = false;
+let stripUrl = null;
 
 function showView(v) {
   $('home').hidden = v !== 'home';
@@ -160,6 +165,35 @@ function showView(v) {
 }
 $('backBtn').onclick = () => showView('home');
 
+const newSeg = (s, e) => ({ id: ++segSeq, s, e });
+const segLen = g => g.e - g.s;
+const total = () => segs.reduce((t, g) => t + segLen(g), 0);
+const startOf = i => { let t = 0; for (let k = 0; k < i; k++) t += segLen(segs[k]); return t; };
+function locate(t) {            // thời gian timeline → {i, src}
+  let acc = 0;
+  for (let i = 0; i < segs.length; i++) {
+    const d = segLen(segs[i]);
+    if (t < acc + d || i === segs.length - 1) return { i, src: segs[i].s + Math.min(d, Math.max(0, t - acc)) };
+    acc += d;
+  }
+  return { i: 0, src: 0 };
+}
+function pos() {                // vị trí vạch đỏ theo thời gian timeline
+  const g = segs[ci]; if (!g) return 0;
+  return startOf(ci) + Math.min(segLen(g), Math.max(0, (vid.currentTime || 0) - g.s));
+}
+function seekTo(t) {
+  if (!segs.length) return;
+  const L = locate(Math.max(0, Math.min(total(), t)));
+  ci = L.i; vid.currentTime = L.src;
+}
+function pushHist() { hist.push(JSON.stringify({ segs, selId })); if (hist.length > 100) hist.shift(); }
+function undo() {
+  const h = hist.pop(); if (!h) return;
+  const o = JSON.parse(h); segs = o.segs; selId = o.selId;
+  ci = Math.min(ci, segs.length - 1); renderSegs(true);
+}
+
 async function openEditor(file) {
   const info = await api.invoke('media:open', file).catch(() => null);
   if (!info) { toast('Không mở được file này', 'error'); return; }
@@ -170,28 +204,26 @@ async function openEditor(file) {
   $('ctrl').classList.toggle('off', isImg); $('timeline').classList.toggle('off', isImg);
   $('mp4Grp').hidden = isImg; $('gifGrp').hidden = isImg;
   if (isImg) $('gifImg').src = info.url; else { vid.src = info.url; vid.load(); }
-  inT = 0; outT = info.duration || 0;
+  segs = [newSeg(0, info.duration || 0)]; selId = null; hist = []; ci = 0;
   $('iName').textContent = info.name; $('iName').title = info.name;
   $('iSize').textContent = info.width ? `${info.width} × ${info.height}` : '—';
   $('iFps').textContent = info.fps || '—';
   $('iDur').textContent = fmtTc(info.duration);
   $('iBytes').textContent = fmtB(info.size);
-  $('tcDur').textContent = fmtTc(info.duration);
   $('owRow').hidden = !/\.mp4$/i.test(info.file);
   $('overwrite').checked = false;
-  buildRuler();
-  const t = $('track');
-  t.style.backgroundImage = '';
-  const n = Math.max(6, Math.round(t.clientWidth / 100));
-  if (!isImg) api.invoke('media:strip', info.src, n).then(u => { if (u && cur === info) t.style.backgroundImage = `url("${u}")`; });
-  renderTrim(); renderGifEst();
+  stripUrl = null;
+  renderSegs(true);
+  const n = Math.max(8, Math.round($('track').clientWidth / 90));
+  if (!isImg) api.invoke('media:strip', info.src, n).then(u => { if (u && cur === info) { stripUrl = u; renderSegs(true); } });
 }
 
 vid.addEventListener('loadedmetadata', () => {
-  if (cur && (!cur.duration || Math.abs(vid.duration - cur.duration) > 0.5) && isFinite(vid.duration)) {
-    cur.duration = vid.duration; outT = vid.duration; $('tcDur').textContent = fmtTc(vid.duration); $('iDur').textContent = fmtTc(vid.duration); buildRuler();
+  if (cur && isFinite(vid.duration) && (!cur.duration || Math.abs(vid.duration - cur.duration) > 0.5)) {
+    const old = cur.duration; cur.duration = vid.duration; $('iDur').textContent = fmtTc(vid.duration);
+    if (segs.length === 1 && segs[0].s === 0 && Math.abs(segs[0].e - old) < 0.01) segs[0].e = vid.duration;
+    renderSegs(true);
   }
-  renderTrim();
 });
 vid.addEventListener('play', () => { playing = true; renderPlay(); });
 vid.addEventListener('pause', () => { playing = false; renderPlay(); });
@@ -201,38 +233,90 @@ vid.volume = .8;
 function renderPlay() { $('playBtn').innerHTML = icon(playing ? 'pause' : 'play'); }
 renderPlay();
 
-function dur() { return cur ? cur.duration || 0 : 0; }
+// --- vẽ timeline ---
+const track = $('track'), tl = $('tl');
 function buildRuler() {
-  const r = $('ruler'), d = dur(); r.innerHTML = '';
+  const r = $('ruler'), d = total(); r.innerHTML = '';
   if (!d) return;
   const n = 8;
   for (let i = 0; i <= n; i++) {
-    const s = document.createElement('span');
-    s.style.left = (i / n * 100) + '%';
-    s.textContent = fmtDur(d * i / n);
-    r.appendChild(s);
+    const sp = document.createElement('span');
+    sp.style.left = (i / n * 100) + '%';
+    sp.textContent = fmtDur(d * i / n);
+    r.appendChild(sp);
   }
 }
-function renderTrim() {
-  const d = dur() || 1, l = inT / d * 100, r = 100 - outT / d * 100;
-  $('cutL').style.width = l + '%'; $('cutR').style.width = r + '%';
-  $('keep').style.left = l + '%'; $('keep').style.right = r + '%';
-  $('keepTxt').textContent = `${fmtTc(inT)} → ${fmtTc(outT)}`;
-  $('keepTxt').title = `${(outT - inT).toFixed(1)} giây`;
+function segEl(g) {
+  let el = track.querySelector(`.segk[data-id="${g.id}"]`);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'segk'; el.dataset.id = g.id;
+    el.innerHTML = '<span class="lab"></span><span class="dur"></span><i class="sg l" title="Kéo để tỉa đầu đoạn"></i><i class="sg r" title="Kéo để tỉa cuối đoạn"></i>';
+    track.appendChild(el);
+  }
+  return el;
+}
+// Đặt vị trí/khổ cho các khối. order: thứ tự hiển thị (có thể khác segs khi đang kéo)
+function layout(order, opts = {}) {
+  const W = track.clientWidth, T = total() || 1, srcD = (cur && cur.duration) || T;
+  let x = 0;
+  order.forEach(g => {
+    const w = segLen(g) / T * W;
+    if (g === opts.slot) { const sl = track.querySelector('.segslot'); if (sl) { sl.style.width = Math.max(4, w - 4) + 'px'; sl.style.transform = `translateX(${x + 2}px)`; } }
+    const el = segEl(g);
+    el.style.width = Math.max(6, w - 4) + 'px';
+    if (g !== opts.dragging) el.style.transform = `translateX(${x + 2}px)`;
+    if (stripUrl) {
+      const bw = w * srcD / Math.max(0.01, segLen(g));
+      el.style.backgroundImage = `url("${stripUrl}")`;
+      el.style.backgroundSize = `${bw}px 100%`;
+      el.style.backgroundPosition = `${-g.s / srcD * bw}px 0`;
+    } else el.style.backgroundImage = '';
+    x += w;
+  });
+}
+function renderSegs(instant) {
+  const ids = new Set(segs.map(g => String(g.id)));
+  track.querySelectorAll('.segk').forEach(el => { if (!ids.has(el.dataset.id)) el.remove(); });
+  segs.forEach((g, i) => {
+    const el = segEl(g);
+    el.classList.toggle('on', g.id === selId);
+    el.querySelector('.lab').textContent = `Đoạn ${i + 1} · ${fmtDur(g.s)}–${fmtDur(g.e)}`;
+    el.querySelector('.dur').textContent = segLen(g).toFixed(1) + 's';
+    if (instant) el.style.transition = 'none';
+  });
+  layout(segs);
+  if (instant) requestAnimationFrame(() => track.querySelectorAll('.segk').forEach(el => el.style.transition = ''));
+  buildRuler();
+  const T = total();
+  $('tcDur').textContent = fmtTc(T);
+  $('iTotal').textContent = fmtTc(T);
+  $('iCount').textContent = segs.length;
+  $('segInfo').innerHTML = `${segs.length} đoạn · tổng <b>${fmtTc(T)}</b>`;
+  $('delSegBtn').disabled = !selId || segs.length < 2;
+  $('undoBtn').disabled = !hist.length;
   renderGifEst();
 }
+addEventListener('resize', () => { if (cur && !$('editor').hidden) renderSegs(true); });
+
 function renderGifEst() {
   if (!cur) return;
-  const fps = gifFps(), sc = gifScale() / 100, d = Math.max(0, outT - inT);
+  const fps = gifFps(), sc = gifScale() / 100, d = total();
   const est = (cur.width || 800) * (cur.height || 450) * sc * sc * fps * d * 0.09;
   $('saveGif').lastChild.textContent = `Xuất GIF (~${fmtB(est)})`;
 }
+
+// Phát liền mạch qua các đoạn
 (function loop() {
-  if (cur && !vid.hidden) {
-    const t = vid.currentTime || 0;
-    if (playing && t >= outT - 0.01) { vid.pause(); vid.currentTime = outT; }
-    $('ph').style.left = (dur() ? t / dur() * 100 : 0) + '%';
-    $('tcCur').textContent = fmtTc(t);
+  if (cur && !vid.hidden && segs.length) {
+    const g = segs[ci];
+    if (playing && g && vid.currentTime >= g.e - 0.02) {
+      if (ci < segs.length - 1) { ci++; vid.currentTime = segs[ci].s; }
+      else { vid.pause(); vid.currentTime = g.e; }
+    }
+    const T = total() || 1, p = pos();
+    $('ph').style.left = (p / T * 100) + '%';
+    $('tcCur').textContent = fmtTc(p);
   }
   requestAnimationFrame(loop);
 })();
@@ -240,37 +324,130 @@ function renderGifEst() {
 function togglePlay() {
   if (!cur || vid.hidden) return;
   if (playing) return vid.pause();
-  if (vid.currentTime >= outT - 0.03 || vid.currentTime < inT) vid.currentTime = inT;
+  if (pos() >= total() - 0.03) seekTo(0);
+  else { const g = segs[ci]; if (vid.currentTime < g.s || vid.currentTime > g.e) vid.currentTime = g.s; }
   vid.play().catch(() => {});
 }
 $('playBtn').onclick = togglePlay;
 $('player').onclick = togglePlay;
-$('toIn').onclick = () => { vid.currentTime = inT; };
-$('toOut').onclick = () => { vid.currentTime = outT; };
-$('setIn').onclick = () => { inT = Math.min(vid.currentTime, outT - 0.1); renderTrim(); };
-$('setOut').onclick = () => { outT = Math.max(vid.currentTime, inT + 0.1); renderTrim(); };
-$('resetCut').onclick = () => { inT = 0; outT = dur(); renderTrim(); };
+$('toIn').onclick = () => seekTo(0);
+$('toOut').onclick = () => seekTo(total());
 
-// kéo trên timeline
-const tl = $('tl');
-function timeAt(x) { const r = tl.getBoundingClientRect(); return Math.min(1, Math.max(0, (x - r.left) / r.width)) * dur(); }
-let tlDrag = null;
+// --- thao tác đoạn ---
+function splitAt() {
+  if (!cur) return;
+  const p = pos(), L = locate(p), g = segs[L.i];
+  if (L.src - g.s < 0.1 || g.e - L.src < 0.1) { toast('Đưa vạch đỏ vào giữa đoạn để cắt'); return; }
+  pushHist();
+  const a = newSeg(g.s, L.src), b = newSeg(L.src, g.e);
+  segs.splice(L.i, 1, a, b);
+  selId = b.id; ci = L.i + 1; vid.currentTime = b.s;
+  renderSegs(true);
+  segEl(b).classList.add('pop'); setTimeout(() => segEl(b).classList.remove('pop'), 300);
+}
+function deleteSel() {
+  const i = segs.findIndex(g => g.id === selId);
+  if (i < 0) return;
+  if (segs.length < 2) { toast('Phải còn ít nhất 1 đoạn'); return; }
+  pushHist();
+  const p = startOf(i);
+  segs.splice(i, 1);
+  selId = (segs[i] || segs[i - 1]).id;
+  renderSegs(false);   // các khối sau trượt sang trái khít lại
+  seekTo(Math.min(p, total()));
+}
+$('splitBtn').onclick = splitAt;
+$('delSegBtn').onclick = deleteSel;
+$('undoBtn').onclick = undo;
+$('resetCut').onclick = () => { if (!cur) return; pushHist(); segs = [newSeg(0, cur.duration)]; selId = null; ci = 0; vid.currentTime = 0; renderSegs(true); };
+
+// --- chuột trên timeline: tua / chọn / tỉa / kéo đổi chỗ ---
+function timeAt(x) { const r = track.getBoundingClientRect(); return Math.min(1, Math.max(0, (x - r.left) / r.width)) * total(); }
+let act = null;
 tl.addEventListener('pointerdown', e => {
   if (!cur || e.button !== 0) return;
-  const g = e.target.id === 'gripL' ? 'in' : e.target.id === 'gripR' ? 'out' : 'seek';
-  tlDrag = g;
-  if (g !== 'seek') e.target.classList.add('drag');
-  else { tl.classList.add('scrub'); vid.pause(); vid.currentTime = timeAt(e.clientX); }
+  const el = e.target.closest('.segk');
   tl.setPointerCapture(e.pointerId);
+  if (e.target.classList.contains('sg') && el) {               // tỉa mép
+    const g = segs.find(x => String(x.id) === el.dataset.id);
+    pushHist();
+    act = { type: 'trim', g, side: e.target.classList.contains('l') ? 's' : 'e', el };
+    el.classList.add('trimming'); vid.pause();
+    return;
+  }
+  if (el) {                                                     // có thể là bấm chọn hoặc kéo đổi chỗ
+    const g = segs.find(x => String(x.id) === el.dataset.id);
+    act = { type: 'press', g, el, sx: e.clientX, t: timeAt(e.clientX) };
+    return;
+  }
+  act = { type: 'seek' }; tl.classList.add('scrub'); vid.pause(); seekTo(timeAt(e.clientX));
 });
 tl.addEventListener('pointermove', e => {
-  if (!tlDrag) return;
-  const t = timeAt(e.clientX);
-  if (tlDrag === 'in') { inT = Math.min(t, outT - 0.1); vid.currentTime = inT; renderTrim(); }
-  else if (tlDrag === 'out') { outT = Math.max(t, inT + 0.1); vid.currentTime = outT; renderTrim(); }
-  else vid.currentTime = t;
+  if (!act) return;
+  if (act.type === 'seek') { seekTo(timeAt(e.clientX)); return; }
+  if (act.type === 'trim') {
+    const { g, side } = act, srcD = cur.duration;
+    const r = track.getBoundingClientRect(), T = total();
+    // đổi khoảng cách kéo (px) ra giây theo tỉ lệ hiện tại của timeline
+    const dt = (e.movementX || 0) / r.width * T;
+    if (side === 's') g.s = Math.min(g.e - 0.1, Math.max(0, g.s + dt));
+    else g.e = Math.max(g.s + 0.1, Math.min(srcD, g.e + dt));
+    ci = segs.indexOf(g); vid.currentTime = side === 's' ? g.s : g.e;
+    renderSegs(true);
+    return;
+  }
+  if (act.type === 'press' && Math.abs(e.clientX - act.sx) > 4) startReorder(act, e);
+  if (act.type === 'drag') moveReorder(e);
 });
-tl.addEventListener('pointerup', () => { tlDrag = null; tl.classList.remove('scrub'); document.querySelectorAll('.grip.drag').forEach(g => g.classList.remove('drag')); });
+tl.addEventListener('pointerup', e => {
+  if (!act) return;
+  const a = act; act = null;
+  tl.classList.remove('scrub');
+  if (a.type === 'trim') { a.el.classList.remove('trimming'); renderSegs(true); }
+  else if (a.type === 'press') { selId = a.g.id; vid.pause(); seekTo(a.t); renderSegs(false); }
+  else if (a.type === 'drag') endReorder(a, false);
+});
+tl.addEventListener('pointercancel', () => { if (act && act.type === 'drag') endReorder(act, true); act = null; });
+
+// Kéo đổi chỗ: khối đang kéo đi theo chuột, các khối khác trượt (transform) nhường ô nét đứt
+function startReorder(a, e) {
+  pushHist();
+  vid.pause();
+  const r = track.getBoundingClientRect();
+  a.type = 'drag';
+  a.from = segs.indexOf(a.g);
+  a.order = segs.slice();
+  a.grab = e.clientX - (r.left + startOf(a.from) / total() * r.width);
+  selId = a.g.id;
+  renderSegs(false);
+  a.el.classList.add('lift');
+  const sl = document.createElement('div'); sl.className = 'segslot'; track.appendChild(sl);
+  layout(a.order, { dragging: a.g, slot: a.g });
+  moveReorder(e);
+}
+function moveReorder(e) {
+  const a = act; if (!a) return;
+  const r = track.getBoundingClientRect(), T = total(), W = r.width;
+  const w = segLen(a.g) / T * W;
+  let x = Math.min(W - w, Math.max(0, e.clientX - r.left - a.grab));
+  a.el.style.transform = `translateX(${x + 2}px) translateY(-6px) scale(1.03)`;
+  // tìm vị trí chèn: tâm khối kéo so với tâm các khối còn lại
+  const center = x + w / 2, rest = a.order.filter(g => g !== a.g);
+  let idx = 0, acc = 0;
+  for (const g of rest) { const gw = segLen(g) / T * W; if (center > acc + gw / 2) idx++; acc += gw; }
+  const order = rest.slice(); order.splice(idx, 0, a.g);
+  if (order.some((g, i) => g !== a.order[i])) { a.order = order; layout(order, { dragging: a.g, slot: a.g }); }
+}
+function endReorder(a, cancel) {
+  if (!cancel) segs = a.order;
+  else segs = segs.slice();
+  const sl = track.querySelector('.segslot'); if (sl) sl.remove();
+  a.el.classList.remove('lift');
+  ci = segs.indexOf(a.g); vid.currentTime = a.g.s;
+  if (!cancel && a.order.indexOf(a.g) === a.from) hist.pop();   // thả lại chỗ cũ: không tính là 1 bước
+  renderSegs(false);   // bay về đúng ô
+  a.el.classList.add('pop'); setTimeout(() => a.el.classList.remove('pop'), 300);
+}
 
 // GIF
 function chipGroup(id, key) {
@@ -291,7 +468,7 @@ $('saveCut').onclick = async () => {
   vid.pause();
   const ow = $('overwrite').checked && !$('owRow').hidden;
   if (ow) { vid.removeAttribute('src'); vid.load(); }
-  const r = await api.invoke('media:trim', { src: cur.src, start: inT, end: outT, overwrite: ow, original: cur.file });
+  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e })), overwrite: ow, original: cur.file });
   if (!r.ok) { toast('Cắt bị lỗi: ' + r.error, 'error'); if (ow) openEditor(cur.file); return; }
   toast('Đã lưu ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
   openEditor(r.file);
@@ -299,7 +476,7 @@ $('saveCut').onclick = async () => {
 $('saveGif').onclick = async () => {
   if (!cur) return;
   vid.pause();
-  const r = await api.invoke('media:gif', { src: cur.src, start: inT, end: outT, fps: gifFps(), scale: gifScale(), original: cur.file });
+  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e })), fps: gifFps(), scale: gifScale(), original: cur.file });
   if (!r.ok) { toast('Xuất GIF bị lỗi: ' + r.error, 'error'); return; }
   S.gifFps = gifFps(); S.gifScale = gifScale();
   toast('Đã xuất ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
@@ -429,13 +606,15 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (open) hideScrim(open); else if (!$('editor').hidden) showView('home'); return; }
   if (open || $('editor').hidden || !cur) return;
   const fd = 1 / (cur.fps || 30);
+  const k = e.key.toLowerCase();
   if (e.code === 'Space') { togglePlay(); e.preventDefault(); }
-  else if (e.key === 'i' || e.key === 'I') $('setIn').click();
-  else if (e.key === 'o' || e.key === 'O') $('setOut').click();
-  else if (e.key === 'ArrowLeft') { vid.pause(); vid.currentTime = Math.max(0, vid.currentTime - (e.shiftKey ? 1 : fd)); e.preventDefault(); }
-  else if (e.key === 'ArrowRight') { vid.pause(); vid.currentTime = Math.min(dur(), vid.currentTime + (e.shiftKey ? 1 : fd)); e.preventDefault(); }
-  else if (e.key === 'Home') vid.currentTime = inT;
-  else if (e.key === 'End') vid.currentTime = outT;
+  else if (e.ctrlKey && k === 'z') { undo(); e.preventDefault(); }
+  else if (k === 's' && !e.ctrlKey) splitAt();
+  else if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
+  else if (e.key === 'ArrowLeft') { vid.pause(); seekTo(pos() - (e.shiftKey ? 1 : fd)); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { vid.pause(); seekTo(pos() + (e.shiftKey ? 1 : fd)); e.preventDefault(); }
+  else if (e.key === 'Home') seekTo(0);
+  else if (e.key === 'End') seekTo(total());
 });
 
 // ---------- khởi động ----------

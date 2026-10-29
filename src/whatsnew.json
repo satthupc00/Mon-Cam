@@ -1,13 +1,15 @@
 {
-  "version": "1.3.2",
+  "version": "1.4.0",
   "date": "2026-10-29",
   "new": [
-    "F12 mở màn chọn vùng để quay (vùng lần trước hiện sẵn, Enter là quay); đang quay bấm F12 để dừng",
-    "Đang quay bấm Esc để dừng và lưu"
+    "Cắt video thành nhiều đoạn: đặt vạch đỏ rồi bấm Cắt tại đây (phím S)",
+    "Xoá đoạn (phím Del), các đoạn còn lại tự khít lại với nhau",
+    "Giữ và kéo để đổi thứ tự các đoạn, các đoạn khác tự trượt nhường chỗ",
+    "Kéo mép vàng để tỉa đầu/cuối từng đoạn; Ctrl+Z hoàn tác, nút ↺ về clip gốc",
+    "Phát thử, Lưu MP4 và Xuất GIF đều ghép các đoạn theo đúng thứ tự trên timeline"
   ],
-  "improved": [
-    "Bấm PrtSc hiện màn chọn vùng gần như tức thì, không còn hiệu ứng nhòe khi mở",
-    "Chụp ảnh không còn lớp phủ tối quanh vùng chọn, màn hình giữ nguyên"
-  ],
-  "fixed": []
+  "improved": [],
+  "fixed": [
+    "Phím F12 giờ đã mở được màn chọn vùng để quay (trước đây Windows giữ phím này nên app không nhận)"
+  ]
 }
