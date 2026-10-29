@@ -7,6 +7,7 @@ App quay màn hình cho Windows (giống Bandicam), by Mondiro.
 - Bật/tắt con trỏ chuột, hiệu ứng click, âm thanh máy (trong Cài đặt)
 - Tạm dừng / tiếp tục khi đang quay
 - Xem lại ngay: tua bằng vạch đỏ, cắt đầu/cuối, lưu MP4 hoặc xuất GIF
+- Chụp ảnh màn hình (PrtSc) kèm vẽ ghi chú, copy thẳng để dán
 - Tự cập nhật qua GitHub Releases
 
 ## Cài đặt
@@ -18,6 +19,7 @@ Vào mục **Releases** của repo, tải `MonCam-Setup-x.y.z.exe` và chạy.
 | F12 | Bắt đầu (vùng gần nhất) / Dừng & lưu |
 | Shift+F12 | Tạm dừng / Tiếp tục |
 | Ctrl+Shift+R | Chọn vùng mới |
+| PrtSc (hoặc Ctrl+Shift+S) | Chụp ảnh: A mũi tên · R khung · T chữ · P bút · H tô sáng · B làm mờ · Ctrl+Z hoàn tác · Enter/Ctrl+C copy |
 | Space · I · O · ← → | Trong màn Xem lại: phát/dừng, đặt điểm đầu/cuối, lùi/tới từng khung |
 
 ## Phát hành bản mới

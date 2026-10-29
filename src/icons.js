@@ -23,6 +23,15 @@ const ICONS = {
   sparkles:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
   download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
   stop:'<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/>',
+  camera:'<path d="M14.5 4h-5L7.5 6.5H4a2 2 0 0 0-2 2V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-3.5z"/><circle cx="12" cy="13" r="3.5"/>',
+  arrow:'<path d="M5 19L19 5M9 5h10v10"/>',
+  rect:'<rect x="4" y="6" width="16" height="12" rx="1.5"/>',
+  text:'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
+  pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+  hl:'<path d="M9 11l6 6M4 20l3-1 10-10-3-3L4 16z"/><path d="M14 20h6"/>',
+  blur:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h2v2H8zM12 8h2v2h-2zM8 12h2v2H8zM14 12h2v2h-2zM10 14h2v2h-2z" fill="currentColor" stroke="none"/>',
+  undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
 };
 function icon(name, cls) {
   return `<svg class="${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;

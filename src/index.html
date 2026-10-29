@@ -30,7 +30,10 @@
         <button class="card" data-mode="fullscreen" title="Quay cả màn hình đang có chuột"><span class="ic" data-i="monitor"></span><b>Toàn màn hình</b></button>
         <button class="card" data-mode="window" title="Chọn 1 cửa sổ app để quay"><span class="ic" data-i="window"></span><b>Một cửa sổ</b></button>
       </div>
-      <button class="recbtn" id="recBtn"><i></i><span id="recLabel">Chọn vùng & quay</span></button>
+      <div class="actions">
+        <button class="recbtn" id="recBtn"><i></i><span id="recLabel">Chọn vùng & quay</span></button>
+        <button class="shotbtn" id="shotBtn" title="Chụp ảnh màn hình (PrintScreen)" data-i="camera">Chụp ảnh <kbd>PrtSc</kbd></button>
+      </div>
       <button class="sumline" id="sum" title="Đổi định dạng, fps, chuột, âm thanh trong Cài đặt"></button>
     </div>
     <div class="recent fx">
@@ -115,7 +118,8 @@
       <label class="row" id="audioRow"><span class="lbl" data-i="vol">Âm thanh máy</span><input type="checkbox" class="sw" data-key="audio"></label>
     </div>
     <div class="grp"><h4>Phím tắt</h4>
-      <div class="hk"><span>Bắt đầu (vùng gần nhất) / Dừng & lưu</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd></div></div>
+      <div class="hk"><span>Bắt đầu (vùng gần nhất) / Dừng & lưu</span><kbd>F12</kbd><span>Tạm dừng / Tiếp tục</span><kbd>Shift+F12</kbd><span>Chọn vùng mới</span><kbd>Ctrl+Shift+R</kbd><span>Chụp ảnh (copy vào bộ nhớ tạm)</span><kbd>PrtSc</kbd></div>
+      <div class="hint" id="prtHint">Nếu bấm <kbd>PrtSc</kbd> mà Windows mở Snipping Tool: vào <b>Settings → Accessibility → Keyboard</b>, tắt <b>"Use the Print screen key to open screen capture"</b>. Hoặc dùng phím dự phòng <kbd>Ctrl+Shift+S</kbd>.</div></div>
     <div class="grp"><h4>Thư mục lưu</h4>
       <div class="path"><span class="sel ell" id="outDir"></span><button class="btn" id="pickDir">Đổi…</button></div></div>
     <div class="grp"><h4>Khác</h4>

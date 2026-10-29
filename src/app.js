@@ -88,6 +88,7 @@ function startRec() {
   api.invoke('rec:start', mode);
 }
 $('recBtn').onclick = startRec;
+$('shotBtn').onclick = () => api.invoke('shot:start');
 $('sum').onclick = () => openDlg('dlgSettings');
 
 api.on('rec:state', s => { recState = s; renderRecBtn(); });

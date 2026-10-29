@@ -1,9 +1,11 @@
 {
-  "version": "1.1.1",
-  "date": "2026-10-28",
-  "new": [],
-  "improved": [
-    "Icon mới gọn hơn: bỏ vệt sáng bóng, chỉ giữ khối màu và gradient, nhìn rõ hơn trên thanh taskbar"
+  "version": "1.2.0",
+  "date": "2026-10-29",
+  "new": [
+    "Chụp ảnh màn hình: bấm PrtSc (hoặc nút Chụp ảnh), kéo chọn vùng, ảnh được copy sẵn để dán bằng Ctrl+V",
+    "Vẽ ghi chú lên ảnh chụp: mũi tên, khung, chữ, bút vẽ, bút tô sáng, làm mờ để che thông tin, 6 màu, hoàn tác",
+    "Phím dự phòng Ctrl+Shift+S khi phím PrtSc đang bị Windows dùng cho Snipping Tool"
   ],
+  "improved": [],
   "fixed": []
 }

@@ -211,3 +211,12 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .playhead::before{top:0;left:-8px;width:18px;height:20px;border:0;background:var(--red);border-radius:4px 4px 9px 9px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .tlwrap.scrub .playhead::before{transform:scale(1.15)}
 .dlg .dfoot{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex:0 0 auto}
+
+/* ===== v1.2: nút chụp ảnh ===== */
+.home .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.home .recbtn{margin-top:0}
+.shotbtn{height:46px;padding:0 18px;border-radius:24px;background:var(--panel);border:1px solid var(--line);font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text)}
+.shotbtn:hover{border-color:var(--red);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.shotbtn svg{width:18px;height:18px;color:var(--red)}
+#prtHint{margin-top:10px;line-height:1.6}
+#prtHint b{color:var(--text);font-weight:600}

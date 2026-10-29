@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, desktopCapturer, globalShortcut, shell, session, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, desktopCapturer, globalShortcut, shell, session, dialog, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -123,7 +123,7 @@ function lastRectOn(d) {
 }
 let overlays = [];
 let selecting = null;
-async function startSelection() {
+async function startSelection(opts = {}) {
   if (rec || selecting) return;
   selecting = true;
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
@@ -139,8 +139,9 @@ async function startSelection() {
       const list = overlays; overlays = [];
       list.forEach(o => { if (!o.isDestroyed()) o.destroy(); });
       selecting = null;
-      ipcMain.removeAllListeners('sel:done'); ipcMain.removeAllListeners('sel:cancel'); ipcMain.removeAllListeners('sel:clear-others');
+      ipcMain.removeAllListeners('sel:done'); ipcMain.removeAllListeners('sel:cancel'); ipcMain.removeAllListeners('sel:clear-others'); ipcMain.removeAllListeners('shot:done');
       if (!res && mainWasVisible) showMain();
+      if (res) res.mainWasVisible = mainWasVisible;
       resolve(res);
     };
     ipcMain.on('sel:done', (e, r) => {
@@ -151,6 +152,7 @@ async function startSelection() {
       done({ dip, phys: toPhysical(dip), full: !!r.full });
     });
     ipcMain.on('sel:cancel', () => done(null));
+    ipcMain.on('shot:done', (e, r) => done({ shot: r }));
     ipcMain.on('sel:clear-others', e => overlays.forEach(o => { if (!o.isDestroyed() && o.webContents !== e.sender) o.webContents.send('sel:clear'); }));
     displays.forEach((d, i) => {
       const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
@@ -166,11 +168,11 @@ async function startSelection() {
       o.webContents.once('did-finish-load', () => {
         o.webContents.send('sel:init', {
           displayId: d.id, scale: d.scaleFactor, w: d.bounds.width, h: d.bounds.height,
-          img: src ? src.thumbnail.toDataURL() : null,
+          img: src ? src.thumbnail.toDataURL() : null, shot: !!opts.shot,
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id,
-          last: lastRectOn(d),
+          last: opts.shot ? null : lastRectOn(d),
         });
         o.show();
         if (screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id === d.id) o.focus();
@@ -444,12 +446,38 @@ async function recordWindow(extra) {
   return beginRecording({ dip, phys: toPhysical(dip), full });
 }
 
+// ---------- Chụp ảnh ----------
+// Chọn vùng + vẽ ghi chú ngay trên màn chọn vùng, xong thì copy vào bộ nhớ tạm (không lưu file)
+async function startShot() {
+  if (rec || selecting) return;
+  const res = await startSelection({ shot: true });
+  if (!res || !res.shot) return;
+  const img = nativeImage.createFromDataURL(res.shot.url);
+  if (img.isEmpty()) { if (res.mainWasVisible) showMain(); notify('Chụp ảnh bị lỗi', 'error'); return; }
+  clipboard.writeImage(img);
+  if (res.mainWasVisible && win) win.showInactive();
+  showShotToast(res.shot);
+}
+let shotToast = null;
+function showShotToast(shot) {
+  if (shotToast && !shotToast.isDestroyed()) shotToast.destroy();
+  const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const W = 300, H = 86;
+  const t = makeFloat({ x: wa.x + wa.width - W - 16, y: wa.y + wa.height - H - 16, width: W, height: H }, 'shottoast.html', { clickThrough: true });
+  shotToast = t;
+  t.webContents.once('did-finish-load', () => t.webContents.send('toast:data', { url: shot.url, w: shot.w, h: shot.h }));
+  setTimeout(() => { if (!t.isDestroyed()) t.destroy(); }, 2600);
+}
+
 // ---------- Phím tắt ----------
+let shotKeyOk = true;
 function registerKeys() {
   globalShortcut.unregisterAll();
   globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('last'); });
   globalShortcut.register('Shift+F12', togglePause);
   globalShortcut.register('CommandOrControl+Shift+R', () => { if (!rec) startMode('region'); });
+  shotKeyOk = globalShortcut.register('PrintScreen', startShot);
+  globalShortcut.register('CommandOrControl+Shift+S', startShot);   // phím dự phòng khi PrtSc bị Windows giữ
 }
 
 // ---------- Danh sách file ----------
@@ -492,6 +520,8 @@ function setupIpc() {
 
   ipcMain.handle('rec:start', (e, mode, extra) => { startMode(mode, extra); });
   ipcMain.handle('win:layout', (e, mode) => setLayout(mode));
+  ipcMain.handle('shot:start', () => { startShot(); });
+  ipcMain.handle('shot:keyOk', () => shotKeyOk);
   ipcMain.handle('rec:pause', togglePause);
   ipcMain.handle('rec:stop', stopRecording);
   ipcMain.handle('rec:cancel', async () => { await abortRec(); showMain(); notify('Đã huỷ bản quay'); });

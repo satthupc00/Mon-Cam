@@ -22,10 +22,25 @@ html,body{background:#000;cursor:crosshair}
 .loupe{position:fixed;width:120px;height:120px;border-radius:8px;border:2px solid #fff;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.5);pointer-events:none;display:none;background:#000}
 .loupe canvas{display:block}
 .loupe span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);color:#fff;font-size:10.5px;text-align:center;font-variant-numeric:tabular-nums}
+#ann{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.sel.drawing{pointer-events:none}
+.sel.drawing .h{pointer-events:auto}
+body.tool-on{cursor:crosshair}
+body.tool-text{cursor:text}
+.tool{width:32px;height:32px;border-radius:6px;border:1px solid transparent;background:none;display:grid;place-items:center;cursor:pointer;color:var(--text);padding:0}
+.tool svg{width:16px;height:16px}
+.tool:hover{border-color:var(--red);transform:translateY(-1px)}
+.tool.on{background:var(--selected-bg);border-color:var(--red);color:#fff;animation:pop .28s var(--ease-spring)}
+.swatch{width:20px;height:20px;border-radius:5px;border:2px solid transparent;cursor:pointer;margin:0 1px;padding:0}
+.swatch:hover{transform:translateY(-1px)}
+.swatch.on{border-color:#fff;box-shadow:0 0 0 2px var(--red);animation:pop .28s var(--ease-spring)}
+.ann-text{position:fixed;min-width:40px;padding:3px 5px;border:1px dashed currentColor;border-radius:3px;font:700 22px/1.25 "Segoe UI",system-ui,sans-serif;outline:none;white-space:pre;cursor:text;background:rgba(0,0,0,.08)}
+.hint .cam{color:var(--red);font-weight:700}
 </style></head>
 <body>
 <img id="shot" alt="">
 <canvas id="dim"></canvas>
+<canvas id="ann"></canvas>
 <div class="sel" id="sel"><i class="h nw" data-h="nw"></i><i class="h n" data-h="n"></i><i class="h ne" data-h="ne"></i><i class="h e" data-h="e"></i><i class="h se" data-h="se"></i><i class="h s" data-h="s"></i><i class="h sw" data-h="sw"></i><i class="h w" data-h="w"></i></div>
 <div class="tag" id="tag"></div>
 <div class="hint" id="hint">Kéo để chọn vùng · Bấm 1 lần để chọn cả màn hình · <kbd>Enter</kbd> quay · <kbd>Esc</kbd> huỷ</div>
@@ -41,7 +56,23 @@ html,body{background:#000;cursor:crosshair}
   <button class="ibtn" id="tAudio" title="Thu âm thanh máy"></button>
   <button class="ibtn" id="cancel" title="Huỷ (Esc)" data-i="x"></button>
 </div>
+<div class="bar" id="shotbar">
+  <button class="tool" data-tool="arrow" title="Mũi tên (A)" data-i="arrow"></button>
+  <button class="tool" data-tool="rect" title="Khung (R) · giữ Shift = vuông" data-i="rect"></button>
+  <button class="tool" data-tool="text" title="Chữ (T)" data-i="text"></button>
+  <button class="tool" data-tool="pen" title="Bút vẽ (P)" data-i="pen"></button>
+  <button class="tool" data-tool="hl" title="Bút tô sáng (H)" data-i="hl"></button>
+  <button class="tool" data-tool="blur" title="Làm mờ (B)" data-i="blur"></button>
+  <span class="div"></span>
+  <span id="swatches"></span>
+  <span class="div"></span>
+  <button class="tool" id="undo" title="Hoàn tác (Ctrl+Z)" data-i="undo"></button>
+  <button class="tool" id="shotCancel" title="Huỷ (Esc)" data-i="x"></button>
+  <span class="div"></span>
+  <button class="btn pri" id="copyBtn" title="Copy ảnh (Enter / Ctrl+C)" data-i="copy">Copy <kbd>Enter</kbd></button>
+</div>
 <div class="loupe" id="loupe"><canvas id="lc" width="120" height="120"></canvas><span id="lpos"></span></div>
 <script src="icons.js"></script>
+<script src="annotate.js"></script>
 <script src="overlay.js"></script>
 </body></html>

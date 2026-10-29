@@ -1,6 +1,7 @@
 hydrateIcons();
 const $ = id => document.getElementById(id);
-const shot = $('shot'), dim = $('dim'), selEl = $('sel'), tag = $('tag'), bar = $('bar'), loupe = $('loupe'), lc = $('lc').getContext('2d');
+const shot = $('shot'), dim = $('dim'), selEl = $('sel'), tag = $('tag'), loupe = $('loupe'), lc = $('lc').getContext('2d');
+let bar = $('bar');
 let cfg = { scale: 1, w: innerWidth, h: innerHeight, cursor: true, audio: true, gif: false };
 let sel = null;            // {x,y,w,h} theo DIP trong màn này
 let drag = null;           // {mode,sx,sy,orig}
@@ -14,10 +15,45 @@ api.on('sel:init', c => {
     $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
   }
   $('pLast').hidden = !c.last;
+  if (c.shot) setupShot();
   sizeCanvas(); syncToggles(); draw();
   if (!c.cursorHere) $('hint').style.opacity = 0;
 });
 api.on('sel:clear', () => { sel = null; draw(); });
+
+// ---------- chế độ chụp ảnh ----------
+const COLORS = [['#E5383B', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
+const TOOL_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl', b: 'blur' };
+function setupShot() {
+  $('bar').style.display = 'none';
+  bar = $('shotbar');
+  $('hint').innerHTML = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · Vẽ ghi chú rồi <kbd>Enter</kbd> / <kbd>Ctrl+C</kbd> để copy · <kbd>Esc</kbd> huỷ';
+  const sw = $('swatches');
+  COLORS.forEach(([c, n], i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i ? '' : ' on'); b.style.background = c; b.title = n;
+    b.onclick = () => { Ann.color = c; sw.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b)); if (Ann.textEl) Ann.textEl.style.color = c; };
+    sw.appendChild(b);
+  });
+  bar.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(Ann.tool === b.dataset.tool ? null : b.dataset.tool));
+  $('undo').onclick = () => Ann.undo();
+  $('shotCancel').onclick = () => api.send('sel:cancel');
+  $('copyBtn').onclick = doShot;
+  Ann.init(img, () => sel, () => {});
+}
+function setTool(t) {
+  Ann.commitText();
+  Ann.tool = t;
+  bar.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  document.body.classList.toggle('tool-on', !!t);
+  document.body.classList.toggle('tool-text', t === 'text');
+  draw();
+}
+function doShot() {
+  if (!sel || sel.w < 2 || sel.h < 2 || !img) return;
+  const r = Ann.export();
+  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId });
+}
 
 function sizeCanvas() { dim.width = innerWidth; dim.height = innerHeight; }
 addEventListener('resize', () => { sizeCanvas(); draw(); });
@@ -50,6 +86,8 @@ function draw() {
   g.clearRect(0, 0, dim.width, dim.height);
   g.fillStyle = 'rgba(0,0,0,.5)';
   g.fillRect(0, 0, dim.width, dim.height);
+  if (cfg.shot) Ann.redraw();
+  selEl.classList.toggle('drawing', !!(cfg.shot && Ann.tool));
   if (!sel) { selEl.style.display = tag.style.display = bar.style.display = 'none'; return; }
   g.clearRect(sel.x, sel.y, sel.w, sel.h);
   Object.assign(selEl.style, { display: 'block', left: sel.x - 1 + 'px', top: sel.y - 1 + 'px', width: sel.w + 2 + 'px', height: sel.h + 2 + 'px' });
@@ -82,6 +120,7 @@ function preset(p) {
 }
 
 function confirm(full) {
+  if (cfg.shot) { if (full === true) { sel = { x: 0, y: 0, w: innerWidth, h: innerHeight }; draw(); } else doShot(); return; }
   if (full === true) sel = { x: 0, y: 0, w: innerWidth, h: innerHeight };
   if (!sel || sel.w < 8 || sel.h < 8) return;
   api.send('sel:done', {
@@ -93,7 +132,12 @@ function confirm(full) {
 
 // --- chuột ---
 addEventListener('pointerdown', e => {
-  if (e.button !== 0 || bar.contains(e.target)) return;
+  if (e.button !== 0 || bar.contains(e.target) || e.target.closest('.ann-text')) return;
+  if (cfg.shot && Ann.tool && sel && !(e.target.dataset && e.target.dataset.h)) {
+    // đang cầm công cụ: chỉ vẽ trong vùng chọn, bấm ra ngoài không làm mất vùng
+    if (Ann.down(e)) document.body.setPointerCapture(e.pointerId);
+    return;
+  }
   $('hint').style.opacity = 0;
   const h = e.target.dataset && e.target.dataset.h;
   if (h) drag = { mode: h, sx: e.clientX, sy: e.clientY, orig: { ...sel } };
@@ -103,7 +147,8 @@ addEventListener('pointerdown', e => {
   draw();
 });
 addEventListener('pointermove', e => {
-  showLoupe(e.clientX, e.clientY, !bar.contains(e.target));
+  if (Ann.cur) { Ann.move(e); return; }
+  showLoupe(e.clientX, e.clientY, !bar.contains(e.target) && !(cfg.shot && Ann.tool));
   if (!drag) return;
   const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy, o = drag.orig;
   if (drag.mode === 'new') sel = norm({ x: drag.sx, y: drag.sy, w: dx, h: dy });
@@ -119,6 +164,7 @@ addEventListener('pointermove', e => {
   draw();
 });
 addEventListener('pointerup', e => {
+  if (Ann.up()) return;
   if (!drag) return;
   const wasNew = drag.mode === 'new', moved = Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy);
   const orig = drag.orig;
@@ -144,6 +190,13 @@ function showLoupe(x, y, on) {
 }
 
 addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('.ann-text')) return;
+  if (cfg.shot) {
+    const k = e.key.toLowerCase();
+    if (e.ctrlKey && k === 'c') { doShot(); e.preventDefault(); return; }
+    if (e.ctrlKey && k === 'z') { Ann.undo(); e.preventDefault(); return; }
+    if (sel && !e.ctrlKey && !e.altKey && TOOL_KEYS[k]) { setTool(Ann.tool === TOOL_KEYS[k] ? null : TOOL_KEYS[k]); return; }
+  }
   if (e.key === 'Escape') api.send('sel:cancel');
   else if (e.key === 'Enter') confirm();
   else if (sel && e.key.startsWith('Arrow')) {
