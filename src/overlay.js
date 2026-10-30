@@ -46,8 +46,9 @@ api.on('sel:reset', () => {
 api.on('sel:clear', () => { sel = null; draw(); });
 
 // ---------- chế độ chụp ảnh ----------
-const COLORS = [['#E5383B', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
+const COLORS = [['#FF0000', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
 const TOOL_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl', b: 'blur' };
+const SIZE_NAMES = ['Nét mảnh', 'Nét dày', 'Nét rất dày'];
 let shotReady = false, SHOT_HINT = '';
 function setupShot() {
   $('bar').style.display = 'none';
@@ -60,8 +61,25 @@ function setupShot() {
   COLORS.forEach(([c, n], i) => {
     const b = document.createElement('button');
     b.className = 'swatch' + (i ? '' : ' on'); b.style.background = c; b.title = n;
-    b.onclick = () => { Ann.color = c; sw.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b)); if (Ann.textEl) Ann.textEl.style.color = c; };
+    b.onclick = () => pickColor(c, b);
     sw.appendChild(b);
+  });
+  // ô chọn màu tự do
+  const cb = document.createElement('label');
+  cb.className = 'swatch custom'; cb.title = 'Chọn màu khác';
+  cb.innerHTML = '<input type="color" value="#FF00FF">';
+  const inp = cb.querySelector('input');
+  inp.oninput = () => { cb.style.setProperty('--c', inp.value); pickColor(inp.value, cb); };
+  inp.onclick = () => pickColor(inp.value, cb);
+  sw.appendChild(cb);
+  // 3 nấc độ dày nét
+  const sz = $('sizes');
+  SIZE_NAMES.forEach((n, i) => {
+    const b = document.createElement('button');
+    b.className = 'sizebtn' + (i ? '' : ' on'); b.title = `${n} (${i + 1})`; b.dataset.s = i;
+    b.innerHTML = `<i style="width:${[4, 8, 13][i]}px;height:${[4, 8, 13][i]}px"></i>`;
+    b.onclick = () => setSize(i);
+    sz.appendChild(b);
   });
   bar.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(Ann.tool === b.dataset.tool ? null : b.dataset.tool));
   $('undo').onclick = () => Ann.undo();
@@ -69,6 +87,15 @@ function setupShot() {
   $('copyBtn').onclick = () => doShot(false);
   $('saveBtn').onclick = () => doShot(true);
   Ann.init(img, () => sel, () => {});
+}
+function pickColor(c, el) {
+  Ann.color = c;
+  $('swatches').querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === el));
+  if (Ann.textEl) Ann.textEl.style.color = c;
+}
+function setSize(i) {
+  Ann.size = i;
+  $('sizes').querySelectorAll('.sizebtn').forEach(b => b.classList.toggle('on', +b.dataset.s === i));
 }
 function setTool(t) {
   Ann.commitText();
@@ -238,6 +265,7 @@ addEventListener('keydown', e => {
     if (e.ctrlKey && k === 'c') { doShot(false); e.preventDefault(); return; }
     if (e.ctrlKey && k === 's') { doShot(true); e.preventDefault(); return; }
     if (e.ctrlKey && k === 'z') { Ann.undo(); e.preventDefault(); return; }
+    if (sel && !e.ctrlKey && !e.altKey && ['1', '2', '3'].includes(k)) { setSize(+k - 1); return; }
     if (sel && !e.ctrlKey && !e.altKey && TOOL_KEYS[k]) { setTool(Ann.tool === TOOL_KEYS[k] ? null : TOOL_KEYS[k]); return; }
   }
   if (e.key === 'Escape') api.send('sel:cancel');

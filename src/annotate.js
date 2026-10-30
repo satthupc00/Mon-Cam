@@ -1,7 +1,9 @@
 // Vẽ ghi chú lên ảnh chụp: mũi tên, khung, chữ, bút vẽ, bút tô sáng, làm mờ.
 // Toạ độ lưu theo DIP của cửa sổ chọn vùng; khi xuất ảnh thì nhân theo độ phân giải thật.
 const Ann = {
-  tool: null, color: '#E5383B', items: [], cur: null, img: null, textEl: null,
+  tool: null, color: '#FF0000', size: 0, items: [], cur: null, img: null, textEl: null,
+  K: [1, 2, 3.3],          // độ dày nét theo 3 nấc: mảnh / dày / rất dày
+  TS: [22, 32, 46],        // cỡ chữ theo 3 nấc
   canvas: null, ctx: null, sel: () => null, onChange: () => {},
 
   init(img, getSel, onChange) {
@@ -21,10 +23,10 @@ const Ann = {
 
   down(e) {
     if (!this.tool || !this.inside(e.clientX, e.clientY)) return false;
-    const x = e.clientX, y = e.clientY, c = this.color;
+    const x = e.clientX, y = e.clientY, c = this.color, k = this.K[this.size];
     if (this.tool === 'text') { this.startText(x, y); return true; }
-    if (this.tool === 'pen' || this.tool === 'hl') this.cur = { t: this.tool, pts: [[x, y]], c };
-    else this.cur = { t: this.tool, x1: x, y1: y, x2: x, y2: y, c };
+    if (this.tool === 'pen' || this.tool === 'hl') this.cur = { t: this.tool, pts: [[x, y]], c, k };
+    else this.cur = { t: this.tool, x1: x, y1: y, x2: x, y2: y, c, k };
     this.redraw();
     return true;
   },
@@ -55,7 +57,8 @@ const Ann = {
     this.commitText();
     const t = document.createElement('div');
     t.className = 'ann-text'; t.contentEditable = 'plaintext-only';
-    t.style.left = x + 'px'; t.style.top = (y - 14) + 'px'; t.style.color = this.color;
+    const fs = this.TS[this.size];
+    t.style.left = x + 'px'; t.style.top = (y - fs * .65) + 'px'; t.style.color = this.color; t.style.fontSize = fs + 'px'; t.dataset.fs = fs;
     document.body.appendChild(t);
     this.textEl = t;
     setTimeout(() => t.focus(), 0);
@@ -72,7 +75,7 @@ const Ann = {
     const s = t.innerText.replace(/\s+$/, '');
     if (s) {
       const r = t.getBoundingClientRect();
-      this.items.push({ t: 'text', x: r.left + 6, y: r.top + 4, s, c: t.style.color, size: 22 });
+      this.items.push({ t: 'text', x: r.left + 6, y: r.top + 4, s, c: t.style.color, size: +t.dataset.fs || 22 });
       this.onChange();
     }
     t.remove(); this.redraw();
@@ -97,9 +100,9 @@ const Ann = {
       g.save();
       g.strokeStyle = g.fillStyle = it.c; g.lineCap = 'round'; g.lineJoin = 'round';
       if (it.t === 'rect') {
-        g.lineWidth = 3; g.strokeRect(Math.min(it.x1, it.x2), Math.min(it.y1, it.y2), Math.abs(it.x2 - it.x1), Math.abs(it.y2 - it.y1));
+        g.lineWidth = 3 * (it.k || 1); g.strokeRect(Math.min(it.x1, it.x2), Math.min(it.y1, it.y2), Math.abs(it.x2 - it.x1), Math.abs(it.y2 - it.y1));
       } else if (it.t === 'arrow') {
-        const w = 4, ang = Math.atan2(it.y2 - it.y1, it.x2 - it.x1), hl = 18, len = Math.hypot(it.x2 - it.x1, it.y2 - it.y1);
+        const k = it.k || 1, w = 4 * k, ang = Math.atan2(it.y2 - it.y1, it.x2 - it.x1), hl = 18 * (1 + (k - 1) * .6), len = Math.hypot(it.x2 - it.x1, it.y2 - it.y1);
         const bx = it.x2 - Math.cos(ang) * Math.min(hl * .8, len), by = it.y2 - Math.sin(ang) * Math.min(hl * .8, len);
         g.lineWidth = w; g.beginPath(); g.moveTo(it.x1, it.y1); g.lineTo(bx, by); g.stroke();
         g.beginPath(); g.moveTo(it.x2, it.y2);
@@ -107,7 +110,7 @@ const Ann = {
         g.lineTo(it.x2 - hl * Math.cos(ang + .45), it.y2 - hl * Math.sin(ang + .45));
         g.closePath(); g.fill(); g.lineWidth = 2; g.stroke();
       } else if (it.t === 'pen' || it.t === 'hl') {
-        g.lineWidth = it.t === 'hl' ? 18 : 3;
+        g.lineWidth = (it.t === 'hl' ? 18 : 3) * (it.k || 1);
         if (it.t === 'hl') { g.globalAlpha = .38; g.lineCap = 'butt'; }
         g.beginPath(); it.pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
       } else if (it.t === 'blur') {
@@ -120,7 +123,7 @@ const Ann = {
       } else if (it.t === 'text') {
         g.font = `700 ${it.size}px "Segoe UI", system-ui, sans-serif`; g.textBaseline = 'top';
         const dark = /#111|17, 17, 17/i.test(it.c);   // chữ đen thì viền sáng, còn lại viền tối mỏng
-        g.lineWidth = 3; g.strokeStyle = dark ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.5)';
+        g.lineWidth = Math.max(2.5, it.size / 12); g.strokeStyle = dark ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.5)';
         it.s.split('\n').forEach((line, i) => { g.strokeText(line, it.x, it.y + i * it.size * 1.25); g.fillText(line, it.x, it.y + i * it.size * 1.25); });
       }
       g.restore();

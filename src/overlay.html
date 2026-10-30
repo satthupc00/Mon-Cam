@@ -36,6 +36,15 @@ body.tool-text{cursor:text}
 .swatch.on{border-color:#fff;box-shadow:0 0 0 2px var(--red);animation:pop .28s var(--ease-spring)}
 .ann-text{position:fixed;min-width:40px;padding:3px 5px;border:1px dashed currentColor;border-radius:3px;font:700 22px/1.25 "Segoe UI",system-ui,sans-serif;outline:none;white-space:pre;cursor:text;background:rgba(0,0,0,.08)}
 .hint .cam{color:var(--red);font-weight:700}
+.swatches,.sizes{display:flex;align-items:center;gap:2px}
+.swatch.custom{position:relative;display:inline-block;overflow:hidden;background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red)}
+.swatch.custom.on{background:var(--c,#f0f)}
+.swatch.custom input{position:absolute;inset:-6px;width:40px;height:40px;opacity:0;cursor:pointer;border:0;padding:0}
+.sizebtn{width:28px;height:32px;border-radius:6px;border:1px solid transparent;background:none;display:grid;place-items:center;cursor:pointer;padding:0}
+.sizebtn i{display:block;border-radius:50%;background:var(--text)}
+.sizebtn:hover{border-color:var(--red)}
+.sizebtn.on{background:var(--selected-bg);border-color:var(--red)}
+.sizebtn.on i{background:#fff}
 </style></head>
 <body>
 <img id="shot" alt="">
@@ -64,7 +73,9 @@ body.tool-text{cursor:text}
   <button class="tool" data-tool="hl" title="Bút tô sáng (H)" data-i="hl"></button>
   <button class="tool" data-tool="blur" title="Làm mờ (B)" data-i="blur"></button>
   <span class="div"></span>
-  <span id="swatches"></span>
+  <span id="sizes" class="sizes"></span>
+  <span class="div"></span>
+  <span id="swatches" class="swatches"></span>
   <span class="div"></span>
   <button class="tool" id="undo" title="Hoàn tác (Ctrl+Z)" data-i="undo"></button>
   <button class="tool" id="shotCancel" title="Huỷ (Esc)" data-i="x"></button>

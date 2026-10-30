@@ -17,7 +17,7 @@ Vào mục **Releases** của repo, tải `MonCam-Setup-x.y.z.exe` và chạy.
 ## Phím tắt
 | Phím | Việc |
 |---|---|
-| PrtSc (hoặc Ctrl+Shift+S) | Chụp ảnh: A mũi tên · R khung · T chữ · P bút · H tô sáng · B làm mờ · Ctrl+Z hoàn tác · Enter/Ctrl+C copy · Ctrl+S lưu + copy |
+| PrtSc (hoặc Ctrl+Shift+S) | Chụp ảnh: A mũi tên · R khung · T chữ · P bút · H tô sáng · B làm mờ · 1 2 3 độ dày nét · Ctrl+Z hoàn tác · Enter/Ctrl+C copy · Ctrl+S lưu + copy |
 | Space · S · Del · Ctrl+Z · ← → | Trong màn Xem lại: phát/dừng, cắt tại vạch đỏ, xoá đoạn, hoàn tác, lùi/tới từng khung |
 
 ## Phát hành bản mới
