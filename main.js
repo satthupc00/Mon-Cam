@@ -77,7 +77,7 @@ function createMain() {
     win.hide();
     if (!settings.trayTipShown && tray) {
       settings.trayTipShown = true; saveSettings();
-      try { tray.displayBalloon({ title: 'Mon Cam vẫn đang chạy', content: 'Bấm PrtSc để chụp, F12 để quay. Chuột phải icon ở khay để thoát hẳn.', iconType: 'info' }); } catch {}
+      try { tray.displayBalloon({ title: 'Mon Cam vẫn đang chạy', content: 'Bấm PrtSc để chụp ảnh. Chuột phải icon ở khay để quay hoặc thoát hẳn.', iconType: 'info' }); } catch {}
     }
   });
   win.on('closed', () => { win = null; });
@@ -218,7 +218,7 @@ async function startSelection(opts = {}) {
     const done = res => {
       overlays.forEach(parkOverlay); overlays = [];
       selecting = null;
-      ['sel:done', 'sel:cancel', 'sel:clear-others', 'shot:done', 'sel:ready'].forEach(c => ipcMain.removeAllListeners(c));
+      ['sel:done', 'sel:cancel', 'sel:clear-others', 'shot:done', 'sel:ready', 'sel:arm'].forEach(c => ipcMain.removeAllListeners(c));
       if (!res && mainWasVisible && !opts.shot) showMain();
       if (res) res.mainWasVisible = mainWasVisible;
       resolve(res);
@@ -232,6 +232,10 @@ async function startSelection(opts = {}) {
     });
     ipcMain.on('sel:cancel', () => done(null));
     ipcMain.on('shot:done', (e, r) => done({ shot: r }));
+    ipcMain.on('sel:arm', (e, r) => {
+      const d = displays.find(x => x.id === r.displayId) || screen.getPrimaryDisplay();
+      done({ arm: true, display: d, rect: r.rect, cursor: r.cursor, audio: r.audio });
+    });
     ipcMain.on('sel:clear-others', e => overlays.forEach(o => { if (!o.isDestroyed() && o.webContents !== e.sender) o.webContents.send('sel:clear'); }));
     // Ảnh nền đã vẽ xong → đưa cửa sổ vào màn hình
     ipcMain.on('sel:ready', e => {
@@ -280,9 +284,7 @@ function makeFloat(bounds, file, opts = {}) {
   w.once('ready-to-show', () => w.showInactive());
   return w;
 }
-function releaseEsc() { try { globalShortcut.unregister('Escape'); } catch {} }
 function closeFloats() {
-  releaseEsc();
   [frameWin, barWin, fxWin].forEach(w => { if (w && !w.isDestroyed()) w.destroy(); });
   frameWin = barWin = fxWin = null;
 }
@@ -368,8 +370,7 @@ async function beginRecording(sel) {
   r.on('crash', () => { notify('Bản quay bị ngắt giữa chừng, đã lưu phần trước đó', 'error'); stopRecording(); });
   rec.timer = setInterval(pushRecState, 250);
   pushRecState();
-  // Esc = dừng & lưu, chỉ giữ phím này trong lúc đang quay
-  try { globalShortcut.register('Escape', () => { if (rec) stopRecording(); }); } catch {}
+
 }
 
 function recState() {
@@ -476,44 +477,82 @@ async function stopRecording() {
 function notify(text, kind) { send('toast', { text, kind }); }
 function shortErr(e) { return String(e && e.message || e).split('\n').filter(Boolean).slice(-1)[0].slice(0, 160); }
 
-// ---------- Bắt phím/chuột cấp thấp (uiohook) ----------
-// Windows giữ riêng phím F12 cho trình gỡ lỗi nên không đăng ký phím tắt thường được →
-// nghe F12 / Shift+F12 qua hook. Hook này cũng dùng cho hiệu ứng click khi quay.
-let hook = null, fxDip = null;
-function setupHook() {
-  try { hook = require('uiohook-napi'); } catch { hook = null; return false; }
-  const { uIOhook, UiohookKey } = hook;
-  const held = new Set();
-  uIOhook.on('keydown', ev => {
-    if (held.has(ev.keycode)) return;          // giữ phím thì không lặp lại
-    held.add(ev.keycode);
-    if (ev.keycode !== UiohookKey.F12) return;
-    if (ev.shiftKey) { togglePause(); return; }
-    if (rec) stopRecording(); else if (!selecting) startMode('region');
-  });
-  uIOhook.on('keyup', ev => held.delete(ev.keycode));
-  uIOhook.on('mousedown', ev => {
-    if (!fxDip || !fxWin || fxWin.isDestroyed()) return;
-    const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
-    fxWin.webContents.send('fx:click', { x: p.x - fxDip.x, y: p.y - fxDip.y, right: ev.button === 2 });
-  });
-  try { uIOhook.start(); return true; } catch { hook = null; return false; }
-}
-
 // ---------- Hiệu ứng click (tuỳ chọn) ----------
+// Bắt chuột toàn hệ thống bằng uiohook, chỉ bật trong lúc quay có bật hiệu ứng click
+let hook = null, fxDip = null, hookOn = false;
 function startClickFx(dip) {
-  if (!hook) { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
+  try {
+    if (!hook) {
+      hook = require('uiohook-napi');
+      hook.uIOhook.on('mousedown', ev => {
+        if (!fxDip || !fxWin || fxWin.isDestroyed()) return;
+        const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
+        fxWin.webContents.send('fx:click', { x: p.x - fxDip.x, y: p.y - fxDip.y, right: ev.button === 2 });
+      });
+    }
+    if (!hookOn) { hook.uIOhook.start(); hookOn = true; }
+  } catch { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
   fxDip = dip;
   fxWin = makeFloat({ x: dip.x, y: dip.y, width: dip.width, height: dip.height }, 'clickfx.html', { clickThrough: true, protect: false });
 }
-function stopClickFx() { fxDip = null; }
+function stopClickFx() {
+  fxDip = null;
+  if (hook && hookOn) { try { hook.uIOhook.stop(); } catch {} hookOn = false; }
+}
+
+// ---------- Khung chờ quay ----------
+// Cửa sổ trong suốt phủ màn hình: tối 50% quanh vùng chọn + khung đỏ + thanh nút.
+// Chuột bấm xuyên qua (setIgnoreMouseEvents + forward), chỉ thanh nút / nút kéo mép mới nhận chuột.
+let armWin = null;
+function armRegion(d, rect, cursor, audio) {
+  return new Promise(resolve => {
+    if (armWin && !armWin.isDestroyed()) armWin.destroy();
+    const w = new BrowserWindow({
+      ...d.bounds, frame: false, transparent: true, resizable: false, movable: false, skipTaskbar: true,
+      alwaysOnTop: true, hasShadow: false, fullscreenable: false, minimizable: false, maximizable: false, show: false,
+      enableLargerThanScreen: true, type: isWin ? 'toolbar' : undefined,
+      webPreferences: { preload },
+    });
+    armWin = w;
+    w.setAlwaysOnTop(true, 'screen-saver');
+    w.setBounds(d.bounds);
+    w.setIgnoreMouseEvents(true, { forward: true });
+    w.loadFile(page('armed.html'));
+    w.webContents.once('did-finish-load', () => {
+      w.webContents.send('arm:init', { rect: { x: rect.x, y: rect.y, w: rect.w, h: rect.h }, scale: d.scaleFactor, cursor, audio, gif: settings.format === 'gif' });
+      w.showInactive();
+    });
+    let settled = false;
+    const finish = res => {
+      if (settled) return;          // đóng cửa sổ cũng bắn 'closed' → chỉ nhận kết quả đầu tiên
+      settled = true;
+      ['arm:hit', 'arm:go', 'arm:cancel'].forEach(c => ipcMain.removeAllListeners(c));
+      if (armWin === w) armWin = null;
+      resolve(res);
+      if (!w.isDestroyed()) w.destroy();
+    };
+    ipcMain.on('arm:hit', (e, on) => { if (!w.isDestroyed()) w.setIgnoreMouseEvents(!on, { forward: true }); });
+    ipcMain.on('arm:go', (e, r) => finish(r));
+    ipcMain.on('arm:cancel', () => finish(null));
+    w.on('closed', () => finish(null));
+  });
+}
 
 // ---------- Bắt đầu theo chế độ ----------
 async function startMode(mode, extra) {
   if (rec || selecting) return;
   if (mode === 'region') {
-    const sel = await startSelection();
+    let sel = await startSelection();
     if (!sel) return;
+    if (sel.arm) {   // khung chờ quay: người dùng vẫn thao tác được bên dưới, bấm Quay để bắt đầu
+      const wasVisible = sel.mainWasVisible;
+      const a = await armRegion(sel.display, sel.rect, sel.cursor, sel.audio);
+      if (!a) { if (wasVisible) showMain(); return; }
+      const d = sel.display;
+      const dip = { x: d.bounds.x + a.rect.x, y: d.bounds.y + a.rect.y, width: a.rect.width, height: a.rect.height };
+      settings.cursor = a.cursor; settings.audio = a.audio; saveSettings(); send('settings', settings);
+      sel = { dip, phys: toPhysical(dip) };
+    }
     if (!sel.full) { settings.lastRegion = sel; saveSettings(); }
     return beginRecording(sel);
   }
@@ -577,18 +616,18 @@ function showShotToast(shot, file) {
 }
 
 // ---------- Khay hệ thống ----------
-// Bấm X chỉ ẩn xuống khay: phím PrtSc / F12 vẫn dùng được khi không mở app
+// Bấm X chỉ ẩn xuống khay: phím PrtSc vẫn dùng được khi không mở app
 let tray = null, quitting = false;
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'src', 'tray.png'));
   tray = new Tray(icon.isEmpty() ? nativeImage.createFromPath(path.join(__dirname, 'src', 'icon.png')).resize({ width: 16, height: 16 }) : icon);
-  tray.setToolTip('Mon Cam · PrtSc chụp ảnh · F12 quay vùng · Esc dừng');
+  tray.setToolTip('Mon Cam · PrtSc chụp ảnh');
   const menu = Menu.buildFromTemplate([
     { label: 'Mở Mon Cam', click: showMain },
     { type: 'separator' },
     { label: 'Chụp ảnh', accelerator: 'PrintScreen', registerAccelerator: false, click: () => startShot() },
-    { label: 'Chọn vùng & quay', accelerator: 'F12', registerAccelerator: false, click: () => startMode('region') },
-    { label: 'Dừng quay', accelerator: 'Esc', registerAccelerator: false, click: () => { if (rec) stopRecording(); } },
+    { label: 'Chọn vùng & quay', click: () => startMode('region') },
+    { label: 'Dừng quay', click: () => { if (rec) stopRecording(); } },
     { type: 'separator' },
     { label: 'Mở thư mục video', click: () => { fs.mkdirSync(settings.outDir, { recursive: true }); shell.openPath(settings.outDir); } },
     { label: 'Mở thư mục ảnh chụp', click: () => { fs.mkdirSync(settings.shotDir, { recursive: true }); shell.openPath(settings.shotDir); } },
@@ -604,14 +643,9 @@ function applyLoginItem() {
 }
 
 // ---------- Phím tắt ----------
-let shotKeyOk = true, hookOk = false;
+let shotKeyOk = true;
 function registerKeys() {
   globalShortcut.unregisterAll();
-  if (!hookOk) {   // không có hook (máy khác Windows): thử phím tắt thường
-    globalShortcut.register('F12', () => { if (rec) stopRecording(); else startMode('region'); });
-    globalShortcut.register('Shift+F12', togglePause);
-  }
-  globalShortcut.register('CommandOrControl+Shift+R', () => { if (!rec) startMode('region'); });
   shotKeyOk = globalShortcut.register('PrintScreen', startShot);
   globalShortcut.register('CommandOrControl+Shift+S', startShot);   // phím dự phòng khi PrtSc bị Windows giữ
 }
@@ -769,7 +803,6 @@ app.whenReady().then(() => {
   setupUpdater();
   setupAudioCapture();
   createMain();
-  hookOk = setupHook();
   createTray();
   setTimeout(warmOverlays, 1500);
   screen.on('display-added', warmOverlays); screen.on('display-removed', warmOverlays); screen.on('display-metrics-changed', warmOverlays);
@@ -777,5 +810,5 @@ app.whenReady().then(() => {
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
 });
-app.on('will-quit', () => { globalShortcut.unregisterAll(); if (hook) { try { hook.uIOhook.stop(); } catch {} } });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); stopClickFx(); });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });

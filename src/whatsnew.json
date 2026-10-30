@@ -1,16 +1,12 @@
 {
-  "version": "1.5.0",
-  "date": "2026-10-29",
+  "version": "1.6.0",
+  "date": "2026-10-30",
   "new": [
-    "Timeline: lăn chuột để phóng to / thu nhỏ, giữ chuột phải kéo để di chuyển qua lại",
-    "Xoá đoạn sẽ để lại khoảng trống; kéo đoạn khác vào là tự hít vào mép (mép đoạn bên cạnh, đầu timeline, vạch đỏ)",
-    "Khoảng trống khi Lưu MP4 / Xuất GIF sẽ là hình đen và im lặng; phát thử cũng hiện màn đen ở chỗ trống"
+    "Kéo chọn vùng quay xong, màn tối vẫn giữ quanh vùng chọn nhưng bạn vẫn bấm, gõ, thao tác được app bên dưới; bấm Quay trên thanh nút khi sẵn sàng",
+    "Trong khung chờ quay có thể kéo các góc để chỉnh vùng, kéo nhãn kích thước để di chuyển, đổi nhanh 1280×720 / 1920×1080 / Vuông"
   ],
   "improved": [
-    "Timeline không tự co lại khi xoá hoặc tỉa đoạn",
-    "Lớp phủ tối 50% ngoài vùng chọn trở lại, vẽ nhẹ hơn nên rê chuột mượt hơn"
+    "Bỏ hết phím tắt quay video (F12, Shift+F12, Esc, Ctrl+Shift+R): bắt đầu quay bằng nút Chọn vùng, dừng / tạm dừng bằng thanh nút nhỏ"
   ],
-  "fixed": [
-    "Màn hình bật HDR: video trong màn Xem lại & cắt không còn bị cháy sáng; video mới quay được ghi rõ hệ màu chuẩn"
-  ]
+  "fixed": []
 }

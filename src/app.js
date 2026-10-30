@@ -71,7 +71,7 @@ function renderRecBtn() {
   const busy = recState.state !== 'idle';
   $('recBtn').classList.toggle('rec', busy);
   $('recLabel').textContent = busy ? 'Dừng quay' : MODE_LABEL[mode];
-  $('recBtn').title = busy ? 'Dừng & lưu (F12 / Esc)' : MODE_LABEL[mode];
+  $('recBtn').title = busy ? 'Dừng & lưu' : MODE_LABEL[mode];
 }
 function renderSum() {
   const gif = S.format === 'gif';
@@ -79,7 +79,7 @@ function renderSum() {
   if (!gif) parts.push(S.audio ? 'có âm thanh máy' : 'không tiếng');
   if (S.countdown) parts.push('đếm ngược 3s');
   let last = '';
-  if (S.lastRegion && S.lastRegion.phys) last = `<br><kbd>F12</kbd> chọn vùng & quay · vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h} · <kbd>Esc</kbd> dừng`;
+  if (S.lastRegion && S.lastRegion.phys) last = `<br>vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}`;
   $('sum').innerHTML = parts.join(' · ') + last;
 }
 
@@ -116,7 +116,7 @@ async function loadRecent() {
   const box = $('recent');
   box.innerHTML = '';
   if (!list.length) {
-    box.innerHTML = '<div class="empty"><b>Chưa có bản quay nào</b><span>Chọn kiểu quay rồi bấm nút đỏ, hoặc nhấn <kbd>F12</kbd> để chọn vùng và quay.</span></div>';
+    box.innerHTML = '<div class="empty"><b>Chưa có bản quay nào</b><span>Chọn kiểu quay rồi bấm nút đỏ, hoặc bấm <kbd>PrtSc</kbd> để chụp ảnh.</span></div>';
     return;
   }
   for (const it of list) {

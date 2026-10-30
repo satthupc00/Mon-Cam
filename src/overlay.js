@@ -20,7 +20,7 @@ api.on('sel:init', async c => {
   }
   if (c.last) {
     sel = norm({ x: c.last.x, y: c.last.y, w: c.last.w, h: c.last.h });
-    $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
+    $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo mép để chỉnh hoặc kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
   }
   $('pLast').hidden = !c.last;
   if (c.shot) setupShot(); else { $('shotbar').style.display = 'none'; bar = $('bar'); }
@@ -208,6 +208,11 @@ addEventListener('pointerup', e => {
   drag = null;
   if (wasNew && moved < 5) { confirm(true); return; }   // bấm 1 lần = cả màn hình
   if (!wasNew && orig && (!sel || sel.w < 8 || sel.h < 8)) sel = orig;   // kéo teo về 0 thì trả lại vùng cũ
+  // Quay video: kéo xong là chuyển sang khung chờ quay (màn thật, bấm xuyên qua được)
+  if (!cfg.shot && sel && sel.w >= 8 && sel.h >= 8) {
+    api.send('sel:arm', { displayId: cfg.displayId, rect: { x: Math.round(sel.x), y: Math.round(sel.y), w: Math.round(sel.w), h: Math.round(sel.h) }, cursor: cfg.cursor, audio: cfg.audio });
+    return;
+  }
   draw();
 });
 addEventListener('dblclick', e => { if (sel && e.target === selEl) confirm(); });

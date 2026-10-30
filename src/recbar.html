@@ -23,8 +23,8 @@ button{-webkit-app-region:no-drag}
 <div class="bar" id="bar">
   <span class="dot"></span><span class="timer" id="t">00:00:00</span>
   <span class="info" id="info"></span>
-  <button class="pz" id="pz" title="Tạm dừng (Shift+F12)"></button>
-  <button class="ibtn stop" id="stop" title="Dừng & lưu (F12 / Esc)" data-i="stop"></button>
+  <button class="pz" id="pz" title="Tạm dừng"></button>
+  <button class="ibtn stop" id="stop" title="Dừng & lưu" data-i="stop"></button>
   <button class="ibtn" id="cancel" title="Huỷ bản quay" data-i="trash"></button>
 </div>
 <script src="icons.js"></script>
@@ -43,7 +43,7 @@ function render(s) {
   if (k !== last) {
     last = k;
     $('pz').innerHTML = p ? icon('play') + 'Tiếp tục' : icon('pause') + 'Tạm dừng';
-    $('pz').title = (p ? 'Tiếp tục quay' : 'Tạm dừng') + ' (Shift+F12)';
+    $('pz').title = p ? 'Tiếp tục quay' : 'Tạm dừng';
   }
 }
 render({ state: 'recording', ms: 0 });

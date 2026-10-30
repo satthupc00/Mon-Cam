@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><title>Vùng quay</title>
+<link rel="stylesheet" href="base.css">
+<style>
+/* Lớp trong suốt: màn tối quanh vùng chọn, chuột bấm xuyên qua để dùng app bên dưới.
+   Chỉ thanh nút, các nút kéo mép và nhãn kích thước là bấm được. */
+html,body{background:transparent;pointer-events:none}
+.shade{position:fixed;left:0;top:0;width:0;height:0;background:rgba(0,0,0,.5);contain:strict}
+.sel{position:fixed;border:2px dashed var(--red);box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.sel .h{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--red);border-radius:2px;pointer-events:auto}
+.h.nw{left:-7px;top:-7px;cursor:nwse-resize}.h.ne{right:-7px;top:-7px;cursor:nesw-resize}
+.h.sw{left:-7px;bottom:-7px;cursor:nesw-resize}.h.se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.h.n{left:calc(50% - 6px);top:-7px;cursor:ns-resize}.h.s{left:calc(50% - 6px);bottom:-7px;cursor:ns-resize}
+.h.w{left:-7px;top:calc(50% - 6px);cursor:ew-resize}.h.e{right:-7px;top:calc(50% - 6px);cursor:ew-resize}
+.tag{position:fixed;background:var(--red);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:5px;font-variant-numeric:tabular-nums;pointer-events:auto;cursor:move;display:flex;gap:6px;align-items:center}
+.tag svg{width:12px;height:12px}
+.bar{position:fixed;display:flex;gap:6px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 10px 24px rgba(0,0,0,.45);align-items:center;pointer-events:auto;animation:barIn .25s var(--ease-out)}
+@keyframes barIn{from{opacity:0;transform:translateY(6px)}}
+.bar .div{width:1px;align-self:stretch;background:var(--line);margin:2px}
+.bar .ibtn.on{background:var(--selected-bg);border-color:var(--red);color:#fff}
+.bar .ibtn.off{color:var(--muted)}
+.bar .note{color:var(--muted);font-size:11.5px;padding:0 4px;white-space:nowrap}
+</style></head>
+<body>
+<div class="shade" id="sht"></div><div class="shade" id="shb"></div><div class="shade" id="shl"></div><div class="shade" id="shr"></div>
+<div class="sel" id="sel"><i class="h nw" data-h="nw"></i><i class="h n" data-h="n"></i><i class="h ne" data-h="ne"></i><i class="h e" data-h="e"></i><i class="h se" data-h="se"></i><i class="h s" data-h="s"></i><i class="h sw" data-h="sw"></i><i class="h w" data-h="w"></i></div>
+<div class="tag" id="tag" data-h="move" title="Kéo để di chuyển vùng quay"></div>
+<div class="bar" id="bar">
+  <button class="btn pri" id="go" title="Bắt đầu quay" data-i="play">Quay</button>
+  <span class="note">Vẫn dùng được app bên dưới</span>
+  <span class="div"></span>
+  <button class="chip" data-p="1280x720" title="Đặt vùng 1280×720">1280×720</button>
+  <button class="chip" data-p="1920x1080" title="Đặt vùng 1920×1080">1920×1080</button>
+  <button class="chip" data-p="square" title="Vùng vuông">Vuông</button>
+  <span class="div"></span>
+  <button class="ibtn" id="tCursor"></button>
+  <button class="ibtn" id="tAudio"></button>
+  <button class="ibtn" id="cancel" title="Huỷ" data-i="x"></button>
+</div>
+<script src="icons.js"></script>
+<script src="armed.js"></script>
+</body></html>
