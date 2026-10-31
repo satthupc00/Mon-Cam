@@ -26,6 +26,7 @@ const DEFAULTS = {
   outDir: path.join(app.getPath('videos'), 'Mon Cam'),
   shotDir: path.join(app.getPath('pictures'), 'Mon Cam'),
   closeToTray: true, launchAtLogin: false, trayTipShown: false,
+  rememberShot: true, lastShot: null,
   gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
@@ -152,8 +153,8 @@ function grabDisplay(d) {
 
 // ---------- Chọn vùng ----------
 // Vùng đã chọn lần trước (nếu nằm trên màn này) để hiện sẵn khi chọn vùng mới
-function lastRectOn(d) {
-  const l = settings.lastRegion && settings.lastRegion.dip;
+function lastRectOn(d, region = settings.lastRegion) {
+  const l = region && region.dip;
   if (!l) return null;
   const b = d.bounds;
   if (l.x < b.x || l.y < b.y || l.x + l.width > b.x + b.width || l.y + l.height > b.y + b.height) return null;
@@ -231,7 +232,15 @@ async function startSelection(opts = {}) {
       done({ dip, phys: toPhysical(dip), full: !!r.full });
     });
     ipcMain.on('sel:cancel', () => done(null));
-    ipcMain.on('shot:done', (e, r) => done({ shot: r }));
+    ipcMain.on('shot:done', (e, r) => {
+      // nhớ vùng chụp (nếu bật trong Cài đặt) để lần sau hiện sẵn
+      const d = displays.find(x => x.id === r.displayId);
+      if (settings.rememberShot && d && r.rect) {
+        settings.lastShot = { dip: { x: d.bounds.x + r.rect.x, y: d.bounds.y + r.rect.y, width: r.rect.w, height: r.rect.h } };
+        saveSettings();
+      }
+      done({ shot: r });
+    });
     ipcMain.on('sel:arm', (e, r) => {
       const d = displays.find(x => x.id === r.displayId) || screen.getPrimaryDisplay();
       done({ arm: true, display: d, rect: r.rect, cursor: r.cursor, audio: r.audio });
@@ -261,7 +270,7 @@ async function startSelection(opts = {}) {
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: d.id === cursorId,
-          last: opts.shot ? null : lastRectOn(d),
+          last: opts.shot ? (settings.rememberShot ? lastRectOn(d, settings.lastShot) : null) : lastRectOn(d),
         });
       });
       return o;

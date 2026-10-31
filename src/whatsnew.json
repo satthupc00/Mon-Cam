@@ -1,12 +1,9 @@
 {
-  "version": "1.6.1",
-  "date": "2026-10-30",
+  "version": "1.6.2",
+  "date": "2026-10-31",
   "new": [
-    "Ghi chú ảnh chụp: thêm 3 nấc độ dày nét (mảnh / dày / rất dày, phím 1 2 3) cho khung, mũi tên, bút, bút tô sáng và cỡ chữ",
-    "Ô chọn màu tự do bên cạnh các màu có sẵn"
+    "Chụp ảnh tự nhớ vùng chụp lần trước: bấm PrtSc là vùng cũ hiện sẵn, nhấn Enter là copy luôn (bật/tắt trong Cài đặt → Khác)"
   ],
-  "improved": [
-    "Màu đỏ mặc định đổi thành đỏ tươi #FF0000"
-  ],
+  "improved": [],
   "fixed": []
 }

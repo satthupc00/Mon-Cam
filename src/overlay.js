@@ -23,7 +23,10 @@ api.on('sel:init', async c => {
     $('hint').innerHTML = 'Đang hiện <b>vùng lần trước</b> · <kbd>Enter</kbd> quay luôn · kéo mép để chỉnh hoặc kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
   }
   $('pLast').hidden = !c.last;
-  if (c.shot) setupShot(); else { $('shotbar').style.display = 'none'; bar = $('bar'); }
+  if (c.shot) {
+    setupShot();
+    if (c.last) $('hint').innerHTML = '<span class="cam">Chụp ảnh</span> · Đang hiện <b>vùng chụp lần trước</b> · <kbd>Enter</kbd> copy · kéo mép để chỉnh hoặc kéo chỗ khác để chọn vùng mới · <kbd>Esc</kbd> huỷ';
+  } else { $('shotbar').style.display = 'none'; bar = $('bar'); }
   sizeCanvas(); syncToggles(); draw();
   if (!c.cursorHere) $('hint').style.opacity = 0;
   requestAnimationFrame(() => api.send('sel:ready'));
@@ -108,7 +111,8 @@ function setTool(t) {
 function doShot(save) {
   if (!sel || sel.w < 2 || sel.h < 2 || !img) return;
   const r = Ann.export();
-  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true });
+  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true,
+    rect: { x: Math.round(sel.x), y: Math.round(sel.y), w: Math.round(sel.w), h: Math.round(sel.h) } });
 }
 
 function sizeCanvas() {}
