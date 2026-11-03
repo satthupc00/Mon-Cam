@@ -26,7 +26,7 @@ const DEFAULTS = {
   outDir: path.join(app.getPath('videos'), 'Mon Cam'),
   shotDir: path.join(app.getPath('pictures'), 'Mon Cam'),
   closeToTray: true, launchAtLogin: false, trayTipShown: false,
-  rememberShot: true, lastShot: null,
+  rememberShot: true, lastShot: null, rememberRegion: true,
   gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
@@ -270,7 +270,7 @@ async function startSelection(opts = {}) {
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: d.id === cursorId,
-          last: opts.shot ? (settings.rememberShot ? lastRectOn(d, settings.lastShot) : null) : lastRectOn(d),
+          last: opts.shot ? (settings.rememberShot ? lastRectOn(d, settings.lastShot) : null) : (settings.rememberRegion ? lastRectOn(d) : null),
         });
       });
       return o;
@@ -745,38 +745,47 @@ function setupIpc() {
     await run(['-i', src, '-an', '-vf', `fps=${fps.toFixed(4)},scale=-2:72,tile=${n}x1`, '-frames:v', '1', out]).catch(() => {});
     return fs.existsSync(out) ? pathToFileURL(out).href : null;
   });
-  ipcMain.handle('media:trim', async (e, { src, start, end, segs, overwrite, original }) => {
+  // Ghi chú từ màn chỉnh (data URL PNG) → file tạm cho ffmpeg
+  const notesFile = url => {
+    if (!url || !/^data:image\/png;base64,/.test(url)) return null;
+    const f = path.join(dirs.tmp, 'notes_' + Date.now() + '.png');
+    fs.writeFileSync(f, Buffer.from(url.split(',')[1], 'base64'));
+    return f;
+  };
+  ipcMain.handle('media:trim', async (e, { src, start, end, segs, notes, overwrite, original }) => {
     const list = cleanSegs(segs, start, end);
     if (!list.length) return { ok: false, error: 'Không có đoạn nào để lưu' };
     const keep = original && /\.mp4$/i.test(original) ? original : src;
     const out = overwrite && /\.mp4$/i.test(keep) ? keep + '.part.mp4'
       : uniquePath(settings.outDir, path.basename(keep).replace(/\.(mp4|gif)$/i, '') + '_cut', '.mp4');
     send('busy', { text: 'Đang ghép & lưu…', p: 0 });
+    const ov = notesFile(notes);
     try {
-      await renderSegments(src, list, out, { onP: p => send('busy', { text: 'Đang ghép & lưu…', p }) });
+      await renderSegments(src, list, out, { overlay: ov, onP: p => send('busy', { text: 'Đang ghép & lưu…', p }) });
       let final = out;
       if (overwrite && out.endsWith('.part.mp4')) { fs.renameSync(out, keep); final = keep; }
       return { ok: true, file: final };
     } catch (err) { try { fs.rmSync(out, { force: true }); } catch {} return { ok: false, error: shortErr(err) }; }
-    finally { send('busy', null); }
+    finally { send('busy', null); if (ov) fs.rm(ov, () => {}); }
   });
-  ipcMain.handle('media:gif', async (e, { src, start, end, segs, fps, scale, original }) => {
+  ipcMain.handle('media:gif', async (e, { src, start, end, segs, notes, fps, scale, original }) => {
     settings.gifFps = fps; settings.gifScale = scale; saveSettings();
     const list = cleanSegs(segs, start, end);
     if (!list.length) return { ok: false, error: 'Không có đoạn nào để xuất' };
     const base = path.basename(original || src).replace(/\.(mp4|gif)$/i, '');
     const out = uniquePath(settings.outDir, base + (original && /\.gif$/i.test(original) ? '_cut' : ''), '.gif');
     send('busy', { text: 'Đang xuất GIF…', p: 0 });
+    const ov = notesFile(notes);
     try {
-      await makeGif(src, out, list, fps, scale, p => send('busy', { text: 'Đang xuất GIF…', p }));
+      await makeGif(src, out, list, fps, scale, p => send('busy', { text: 'Đang xuất GIF…', p }), ov);
       // Giữ lại mp4 gốc của GIF để mở xem lại / cắt tiếp được
       if (/\.mp4$/i.test(src)) {
         const s = path.join(dirs.sources, path.basename(out, '.gif') + '.mp4');
-        if (!fs.existsSync(s)) await renderSegments(src, list, s, { preset: 'ultrafast', crf: 16 }).catch(() => {});
+        if (!fs.existsSync(s)) await renderSegments(src, list, s, { preset: 'ultrafast', crf: 16, overlay: ov }).catch(() => {});
       }
       return { ok: true, file: out };
     } catch (err) { return { ok: false, error: shortErr(err) }; }
-    finally { send('busy', null); }
+    finally { send('busy', null); if (ov) fs.rm(ov, () => {}); }
   });
 
   // Ghi file tiếng từ cửa sổ chính

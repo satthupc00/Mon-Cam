@@ -45,6 +45,22 @@
   <!-- ========== XEM LẠI & CẮT ========== -->
   <div class="body" id="editor" hidden>
     <div class="editor">
+      <div class="notebar" id="notebar">
+        <span class="nb-lab">Ghi chú</span>
+        <button class="tool" data-vtool="arrow" title="Mũi tên (A)" data-i="arrow"></button>
+        <button class="tool" data-vtool="rect" title="Khung (R) · giữ Shift = vuông" data-i="rect"></button>
+        <button class="tool" data-vtool="text" title="Chữ (T)" data-i="text"></button>
+        <button class="tool" data-vtool="pen" title="Bút vẽ (P)" data-i="pen"></button>
+        <button class="tool" data-vtool="hl" title="Bút tô sáng (H)" data-i="hl"></button>
+        <span class="div"></span>
+        <span class="sizes" id="vSizes"></span>
+        <span class="div"></span>
+        <span class="swatches" id="vSwatches"></span>
+        <span class="div"></span>
+        <button class="tool" id="vUndo" title="Hoàn tác ghi chú" data-i="undo"></button>
+        <button class="tool" id="vClear" title="Xoá hết ghi chú" data-i="trash"></button>
+        <span class="nb-hint" id="vHint">Ghi chú hiện suốt cả video · bấm Lưu MP4 / Xuất GIF là in luôn lên video</span>
+      </div>
       <div class="player" id="player">
         <div class="vwrap" id="vwrap"><video id="vid" preload="auto"></video><div class="gapcover" id="gapCover" hidden>Khoảng trống · sẽ là hình đen</div></div>
         <img id="gifImg" alt="" hidden>
@@ -129,6 +145,7 @@
     <div class="grp"><h4>Thư mục lưu ảnh chụp</h4>
       <div class="path"><span class="sel ell" id="shotDir"></span><button class="btn" id="pickShotDir">Đổi…</button></div></div>
     <div class="grp"><h4>Khác</h4>
+      <label class="row" title="Lần chọn vùng quay sau, vùng lần trước hiện sẵn — nhấn Enter là quay luôn"><span>Quay video: nhớ vùng chọn lần trước</span><input type="checkbox" class="sw" data-key="rememberRegion"></label>
       <label class="row" title="Lần bấm PrtSc sau, vùng chụp lần trước hiện sẵn — nhấn Enter là copy luôn"><span>Chụp ảnh: nhớ vùng chụp lần trước</span><input type="checkbox" class="sw" data-key="rememberShot"></label>
       <label class="row" title="Bấm X chỉ ẩn xuống khay hệ thống, phím PrtSc vẫn dùng được"><span>Bấm X thì thu xuống khay (PrtSc vẫn chụp được)</span><input type="checkbox" class="sw" data-key="closeToTray"></label>
       <label class="row"><span>Chạy cùng Windows (ẩn ở khay)</span><input type="checkbox" class="sw" data-key="launchAtLogin"></label>
@@ -154,7 +171,9 @@
 <div class="busy" id="busy" hidden><div class="busy-in"><div class="spin"></div><span id="busyTxt"></span><div class="pbar"><i id="busyP"></i></div></div></div>
 <div class="toasts" id="toasts"></div>
 
+<canvas id="vann"></canvas>
 <script src="icons.js"></script>
+<script src="annotate.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

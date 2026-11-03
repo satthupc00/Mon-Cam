@@ -6,9 +6,9 @@ const Ann = {
   TS: [22, 32, 46],        // cỡ chữ theo 3 nấc
   canvas: null, ctx: null, sel: () => null, onChange: () => {},
 
-  init(img, getSel, onChange) {
+  init(img, getSel, onChange, canvas) {
     this.img = img; this.sel = getSel; this.onChange = onChange || (() => {});
-    this.canvas = document.getElementById('ann');
+    this.canvas = canvas || document.getElementById('ann');
     this.ctx = this.canvas.getContext('2d');
     this.resize();
     addEventListener('resize', () => this.resize());

@@ -1,8 +1,10 @@
 {
-  "version": "1.6.2",
-  "date": "2026-10-31",
+  "version": "1.7.0",
+  "date": "2026-11-03",
   "new": [
-    "Chụp ảnh tự nhớ vùng chụp lần trước: bấm PrtSc là vùng cũ hiện sẵn, nhấn Enter là copy luôn (bật/tắt trong Cài đặt → Khác)"
+    "Ghi chú lên video trong màn Xem lại & cắt: mũi tên, khung, chữ, bút vẽ, bút tô sáng; 3 nấc độ dày; 6 màu cơ bản + ô chọn màu tự do",
+    "Ghi chú hiện suốt cả video; bấm Lưu MP4 hoặc Xuất GIF là in luôn lên video",
+    "Tuỳ chọn Quay video: nhớ vùng chọn lần trước (Cài đặt → Khác)"
   ],
   "improved": [],
   "fixed": []

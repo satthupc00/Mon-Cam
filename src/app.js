@@ -79,7 +79,7 @@ function renderSum() {
   if (!gif) parts.push(S.audio ? 'có âm thanh máy' : 'không tiếng');
   if (S.countdown) parts.push('đếm ngược 3s');
   let last = '';
-  if (S.lastRegion && S.lastRegion.phys) last = `<br>vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}`;
+  if (S.rememberRegion !== false && S.lastRegion && S.lastRegion.phys) last = `<br>vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}`;
   $('sum').innerHTML = parts.join(' · ') + last;
 }
 
@@ -161,7 +161,7 @@ function showView(v) {
   $('backBtn').hidden = v !== 'editor';
   $('openDir').hidden = v === 'editor';
   api.invoke('win:layout', v).catch(() => {});
-  if (v === 'home') { stopPlay(); vid.removeAttribute('src'); vid.load(); cur = null; loadRecent(); }
+  if (v === 'home') { stopPlay(); vid.removeAttribute('src'); vid.load(); cur = null; resetNotes(); loadRecent(); }
   refreshFoot();
 }
 $('backBtn').onclick = () => showView('home');
@@ -192,6 +192,7 @@ async function openEditor(file) {
   $('mp4Grp').hidden = isImg; $('gifGrp').hidden = isImg;
   if (isImg) $('gifImg').src = info.url; else { vid.src = info.url; vid.load(); }
   segs = [newSeg(0, info.duration || 0, 0)]; selId = null; hist = []; P = 0; playing = false; renderPlay();
+  requestAnimationFrame(resetNotes);
   $('iName').textContent = info.name; $('iName').title = info.name;
   $('iSize').textContent = info.width ? `${info.width} × ${info.height}` : '—';
   $('iFps').textContent = info.fps || '—';
@@ -330,6 +331,7 @@ function syncPlay(force) {
 function startPlay() { if (P >= total() - 0.03) P = 0; playing = true; lastTick = performance.now(); renderPlay(); syncPlay(true); }
 function stopPlay() { playing = false; playSeg = null; vid.pause(); renderPlay(); }
 function togglePlay() { if (!cur || $('vwrap').hidden) return; playing ? stopPlay() : startPlay(); }
+function playerClick() { if (!VAnn.tool) togglePlay(); }
 (function loop(now) {
   if (cur && playing) {
     const dt = Math.min(0.1, (now - lastTick) / 1000); lastTick = now;
@@ -347,7 +349,7 @@ function togglePlay() { if (!cur || $('vwrap').hidden) return; playing ? stopPla
   requestAnimationFrame(loop);
 })(performance.now());
 $('playBtn').onclick = togglePlay;
-$('player').onclick = togglePlay;
+$('player').onclick = playerClick;
 $('toIn').onclick = () => seekTo(0);
 $('toOut').onclick = () => seekTo(total());
 
@@ -514,6 +516,102 @@ function endMove(a, cancel) {
   seekTo(P);
 }
 
+// ---------- GHI CHÚ LÊN VIDEO (hiện suốt cả video) ----------
+// Dùng lại bộ vẽ của màn chụp ảnh. Nét vẽ lưu theo toạ độ màn hình của khung video;
+// khi khung video đổi cỡ thì co giãn theo. Lúc lưu: vẽ ra ảnh PNG trong suốt đúng cỡ video → ffmpeg in đè lên.
+const VAnn = Object.assign({}, Ann, { items: [], cur: null, textEl: null, tool: null, size: 0, color: '#FF0000' });
+const NOTE_COLORS = [['#FF0000', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
+const NOTE_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl' };
+const vidRect = () => { const r = vid.getBoundingClientRect(); return r.width > 4 ? { x: r.left, y: r.top, w: r.width, h: r.height } : null; };
+let noteRect = null;
+VAnn.init(null, vidRect, () => renderNoteHint(), $('vann'));
+VAnn.inside = function (x, y) { const s = vidRect(); return s && !$('vwrap').hidden && x >= s.x && y >= s.y && x <= s.x + s.w && y <= s.y + s.h; };
+
+function remapNotes() {            // khung video đổi cỡ/vị trí → kéo nét vẽ theo
+  const r = vidRect(); if (!r) return;
+  if (noteRect && (noteRect.x !== r.x || noteRect.y !== r.y || noteRect.w !== r.w)) {
+    const k = r.w / noteRect.w, fx = x => r.x + (x - noteRect.x) * k, fy = y => r.y + (y - noteRect.y) * k;
+    VAnn.items.forEach(it => {
+      if (it.pts) it.pts = it.pts.map(([x, y]) => [fx(x), fy(y)]);
+      if ('x1' in it) { it.x1 = fx(it.x1); it.y1 = fy(it.y1); it.x2 = fx(it.x2); it.y2 = fy(it.y2); }
+      if (it.t === 'text') { it.x = fx(it.x); it.y = fy(it.y); it.size *= k; }
+      if (it.k) it.k *= k;
+    });
+  }
+  noteRect = r;
+  VAnn.redraw();
+}
+new ResizeObserver(remapNotes).observe(vid);
+addEventListener('resize', () => requestAnimationFrame(remapNotes));
+
+function renderNoteHint() {
+  const n = VAnn.items.length;
+  $('vHint').innerHTML = n ? `<b>${n} ghi chú</b> · hiện suốt cả video · bấm Lưu MP4 / Xuất GIF là in luôn lên video`
+    : 'Chọn công cụ rồi vẽ lên khung video · ghi chú hiện suốt cả video';
+  $('vUndo').disabled = !n; $('vClear').disabled = !n;
+}
+function setNoteTool(t) {
+  VAnn.commitText();
+  VAnn.tool = t;
+  document.querySelectorAll('[data-vtool]').forEach(b => b.classList.toggle('on', b.dataset.vtool === t));
+  $('player').classList.toggle('drawing', !!t);
+  $('player').classList.toggle('texting', t === 'text');
+  if (t) stopPlay();
+}
+function setNoteSize(i) { VAnn.size = i; $('vSizes').querySelectorAll('.sizebtn').forEach(b => b.classList.toggle('on', +b.dataset.s === i)); }
+function pickNoteColor(c, el) {
+  VAnn.color = c;
+  $('vSwatches').querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === el));
+  if (VAnn.textEl) VAnn.textEl.style.color = c;
+}
+(function buildNotebar() {
+  document.querySelectorAll('[data-vtool]').forEach(b => b.onclick = () => setNoteTool(VAnn.tool === b.dataset.vtool ? null : b.dataset.vtool));
+  ['Nét mảnh', 'Nét dày', 'Nét rất dày'].forEach((n, i) => {
+    const b = document.createElement('button');
+    b.className = 'sizebtn' + (i ? '' : ' on'); b.title = n; b.dataset.s = i;
+    b.innerHTML = `<i style="width:${[4, 8, 13][i]}px;height:${[4, 8, 13][i]}px"></i>`;
+    b.onclick = () => setNoteSize(i);
+    $('vSizes').appendChild(b);
+  });
+  NOTE_COLORS.forEach(([c, n], i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i ? '' : ' on'); b.style.background = c; b.title = n;
+    b.onclick = () => pickNoteColor(c, b);
+    $('vSwatches').appendChild(b);
+  });
+  const cb = document.createElement('label');
+  cb.className = 'swatch custom'; cb.title = 'Chọn màu khác';
+  cb.innerHTML = '<input type="color" value="#FF00FF">';
+  const inp = cb.querySelector('input');
+  inp.oninput = () => { cb.style.setProperty('--c', inp.value); pickNoteColor(inp.value, cb); };
+  inp.onclick = () => pickNoteColor(inp.value, cb);
+  $('vSwatches').appendChild(cb);
+  $('vUndo').onclick = () => VAnn.undo();
+  $('vClear').onclick = () => { if (VAnn.items.length && confirm('Xoá hết ghi chú trên video?')) { VAnn.items = []; VAnn.redraw(); renderNoteHint(); } };
+  renderNoteHint();
+})();
+function resetNotes() { VAnn.cancelText(); VAnn.items = []; VAnn.cur = null; setNoteTool(null); noteRect = vidRect(); VAnn.redraw(); renderNoteHint(); }
+
+$('player').addEventListener('pointerdown', e => {
+  if (!VAnn.tool || e.button !== 0) return;
+  if (VAnn.down(e)) { e.preventDefault(); $('player').setPointerCapture(e.pointerId); }
+});
+$('player').addEventListener('pointermove', e => { if (VAnn.cur) VAnn.move(e); });
+$('player').addEventListener('pointerup', () => { if (VAnn.cur) VAnn.up(); });
+
+// Ảnh PNG trong suốt, đúng độ phân giải video, chứa toàn bộ ghi chú
+function notesPng() {
+  VAnn.commitText();
+  if (!VAnn.items.length || !cur || !cur.width) return null;
+  const r = vidRect(); if (!r) return null;
+  const W = cur.width, H = cur.height, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.setTransform(W / r.w, 0, 0, H / r.h, -r.x * W / r.w, -r.y * H / r.h);
+  VAnn.render(g, VAnn.items);
+  return c.toDataURL('image/png');
+}
+
 // GIF
 function chipGroup(id, key) {
   const g = $(id);
@@ -533,7 +631,7 @@ $('saveCut').onclick = async () => {
   stopPlay();
   const ow = $('overwrite').checked && !$('owRow').hidden;
   if (ow) { vid.removeAttribute('src'); vid.load(); }
-  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), overwrite: ow, original: cur.file });
+  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), overwrite: ow, original: cur.file });
   if (!r.ok) { toast('Cắt bị lỗi: ' + r.error, 'error'); if (ow) openEditor(cur.file); return; }
   toast('Đã lưu ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
   openEditor(r.file);
@@ -541,7 +639,7 @@ $('saveCut').onclick = async () => {
 $('saveGif').onclick = async () => {
   if (!cur) return;
   stopPlay();
-  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), fps: gifFps(), scale: gifScale(), original: cur.file });
+  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), fps: gifFps(), scale: gifScale(), original: cur.file });
   if (!r.ok) { toast('Xuất GIF bị lỗi: ' + r.error, 'error'); return; }
   S.gifFps = gifFps(); S.gifScale = gifScale();
   toast('Đã xuất ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
@@ -672,6 +770,8 @@ addEventListener('keydown', e => {
   if (open || $('editor').hidden || !cur) return;
   const fd = 1 / (cur.fps || 30);
   const k = e.key.toLowerCase();
+  if (!e.ctrlKey && !e.altKey && NOTE_KEYS[k]) { setNoteTool(VAnn.tool === NOTE_KEYS[k] ? null : NOTE_KEYS[k]); return; }
+  if (VAnn.tool && ['1', '2', '3'].includes(k)) { setNoteSize(+k - 1); return; }
   if (e.code === 'Space') { togglePlay(); e.preventDefault(); }
   else if (e.ctrlKey && k === 'z') { undo(); e.preventDefault(); }
   else if (k === 's' && !e.ctrlKey) splitAt();
