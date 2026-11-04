@@ -1,11 +1,14 @@
 {
-  "version": "1.7.0",
-  "date": "2026-11-03",
+  "version": "1.8.0",
+  "date": "2026-11-04",
   "new": [
-    "Ghi chú lên video trong màn Xem lại & cắt: mũi tên, khung, chữ, bút vẽ, bút tô sáng; 3 nấc độ dày; 6 màu cơ bản + ô chọn màu tự do",
-    "Ghi chú hiện suốt cả video; bấm Lưu MP4 hoặc Xuất GIF là in luôn lên video",
-    "Tuỳ chọn Quay video: nhớ vùng chọn lần trước (Cài đặt → Khác)"
+    "Phím tắt Ctrl+PrtSc: mở màn chọn vùng để quay; đang quay bấm lại để dừng và lưu"
   ],
-  "improved": [],
-  "fixed": []
+  "improved": [
+    "Cài đặt chia 2 tab Quay phim / Chụp ảnh cho gọn",
+    "Bỏ đoạn hướng dẫn về Snipping Tool trong Cài đặt"
+  ],
+  "fixed": [
+    "Nút đóng (X) của hộp Cài đặt và các hộp thoại khác không còn bị 3 nút cửa sổ đè lên"
+  ]
 }

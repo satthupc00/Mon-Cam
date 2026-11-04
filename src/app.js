@@ -71,7 +71,7 @@ function renderRecBtn() {
   const busy = recState.state !== 'idle';
   $('recBtn').classList.toggle('rec', busy);
   $('recLabel').textContent = busy ? 'Dừng quay' : MODE_LABEL[mode];
-  $('recBtn').title = busy ? 'Dừng & lưu' : MODE_LABEL[mode];
+  $('recBtn').title = busy ? 'Dừng & lưu (Ctrl+PrtSc)' : MODE_LABEL[mode];
 }
 function renderSum() {
   const gif = S.format === 'gif';
@@ -79,7 +79,7 @@ function renderSum() {
   if (!gif) parts.push(S.audio ? 'có âm thanh máy' : 'không tiếng');
   if (S.countdown) parts.push('đếm ngược 3s');
   let last = '';
-  if (S.rememberRegion !== false && S.lastRegion && S.lastRegion.phys) last = `<br>vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}`;
+  last = '<br><kbd>Ctrl+PrtSc</kbd> chọn vùng & quay' + (S.rememberRegion !== false && S.lastRegion && S.lastRegion.phys ? ` · vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}` : '');
   $('sum').innerHTML = parts.join(' · ') + last;
 }
 
@@ -90,7 +90,7 @@ function startRec() {
 }
 $('recBtn').onclick = startRec;
 $('shotBtn').onclick = () => api.invoke('shot:start');
-$('sum').onclick = () => openDlg('dlgSettings');
+$('sum').onclick = () => { openDlg('dlgSettings'); requestAnimationFrame(() => setTab('rec')); };
 
 api.on('rec:state', s => { recState = s; renderRecBtn(); });
 
@@ -665,7 +665,19 @@ function hideScrim(sc) {
 document.querySelectorAll('.scrim').forEach(s => {
   s.addEventListener('click', e => { if (e.target === s || e.target.closest('[data-close]')) hideScrim(s); });
 });
-$('setBtn').onclick = () => openDlg('dlgSettings');
+$('setBtn').onclick = () => { openDlg('dlgSettings'); requestAnimationFrame(() => setTab(curTab)); };
+// Cài đặt chia 2 tab: Quay phim / Chụp ảnh — thanh đỏ trượt theo tab đang chọn
+let curTab = 'rec';
+function setTab(t) {
+  curTab = t;
+  document.querySelectorAll('#setTabs .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('#dlgSettings .tabpane').forEach(p => p.hidden = p.dataset.pane !== t);
+  const on = document.querySelector(`#setTabs .tab[data-tab="${t}"]`), bar = $('tabBar');
+  if (on) { bar.style.left = on.offsetLeft + 'px'; bar.style.width = on.offsetWidth + 'px'; }
+  try { localStorage.setItem('setTab', t); } catch {}
+}
+try { const t = localStorage.getItem('setTab'); if (t === 'rec' || t === 'shot') curTab = t; } catch {}
+document.querySelectorAll('#setTabs .tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 $('pickShotDir').onclick = async () => { const d = await api.invoke('files:pickShotDir'); if (d) { S.shotDir = d; renderSettings(); } };
 $('pickDir').onclick = async () => { const d = await api.invoke('files:pickDir'); if (d) { S.outDir = d; renderSettings(); loadRecent(); } };
 $('wnBtn').onclick = openWhatsNew;

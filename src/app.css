@@ -218,8 +218,6 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .shotbtn{height:46px;padding:0 18px;border-radius:24px;background:var(--panel);border:1px solid var(--line);font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text)}
 .shotbtn:hover{border-color:var(--red);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.3)}
 .shotbtn svg{width:18px;height:18px;color:var(--red)}
-#prtHint{margin-top:10px;line-height:1.6}
-#prtHint b{color:var(--text);font-weight:600}
 
 /* ===== v1.4: timeline nhiều đoạn ===== */
 .segtools{display:flex;gap:6px;align-items:center}
@@ -294,3 +292,14 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .player.drawing.texting{cursor:text}
 .ann-text{position:fixed;z-index:30;min-width:40px;padding:3px 5px;border:1px dashed currentColor;border-radius:3px;font:700 22px/1.25 "Segoe UI",system-ui,sans-serif;outline:none;white-space:pre;cursor:text;background:rgba(0,0,0,.08)}
 @media (max-width:1120px){.notebar .nb-hint{display:none}}
+
+/* ===== v1.8: Cài đặt chia tab, hộp thoại không lấn vào vùng nút cửa sổ ===== */
+.scrim{padding:66px 16px 16px}                     /* chừa vùng thanh tiêu đề (3 nút của Windows luôn nằm trên cùng) */
+.dlg{max-height:100%}
+.tabs{position:relative;display:flex;gap:4px;padding:0 14px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.tab{height:38px;padding:0 12px;border:0;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.tab svg{width:15px;height:15px}
+.tab:hover{color:var(--text)}
+.tab.on{color:#fff}
+.tabbar{position:absolute;bottom:-1px;left:0;height:2px;background:var(--red);border-radius:2px;transition:left var(--t-med) var(--ease-out),width var(--t-med) var(--ease-out)}
+.tabpane{animation:rise .25s var(--ease-out)}

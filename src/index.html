@@ -119,7 +119,12 @@
 <!-- Hộp thoại -->
 <div class="scrim" id="dlgSettings" hidden><div class="dlg" role="dialog" aria-label="Cài đặt">
   <header>Cài đặt <button class="ibtn" data-close title="Đóng (Esc)" data-i="x"></button></header>
-  <div class="in">
+  <nav class="tabs" id="setTabs">
+    <button class="tab on" data-tab="rec" data-i="film">Quay phim</button>
+    <button class="tab" data-tab="shot" data-i="camera">Chụp ảnh</button>
+    <i class="tabbar" id="tabBar"></i>
+  </nav>
+  <div class="in tabpane" data-pane="rec">
     <div class="grp"><h4>Định dạng</h4>
       <div class="seg" data-key="format"><button data-v="mp4" data-i="film">MP4</button><button data-v="gif">GIF</button></div>
       <div class="hint" id="gifHint">GIF: không có âm thanh, nên quay đoạn ngắn.</div>
@@ -138,20 +143,27 @@
       <label class="row" id="audioRow"><span class="lbl" data-i="vol">Âm thanh máy</span><input type="checkbox" class="sw" data-key="audio"></label>
     </div>
     <div class="grp"><h4>Phím tắt</h4>
-      <div class="hk"><span>Chụp ảnh · trong lúc chụp: <kbd>Enter</kbd> copy, <kbd>Ctrl+S</kbd> lưu</span><kbd>PrtSc</kbd></div>
-      <div class="hint" id="prtHint">Nếu bấm <kbd>PrtSc</kbd> mà Windows mở Snipping Tool: vào <b>Settings → Accessibility → Keyboard</b>, tắt <b>"Use the Print screen key to open screen capture"</b>. Hoặc dùng phím dự phòng <kbd>Ctrl+Shift+S</kbd>.</div></div>
-    <div class="grp"><h4>Thư mục lưu video</h4>
-      <div class="path"><span class="sel ell" id="outDir"></span><button class="btn" id="pickDir">Đổi…</button></div></div>
-    <div class="grp"><h4>Thư mục lưu ảnh chụp</h4>
-      <div class="path"><span class="sel ell" id="shotDir"></span><button class="btn" id="pickShotDir">Đổi…</button></div></div>
-    <div class="grp"><h4>Khác</h4>
-      <label class="row" title="Lần chọn vùng quay sau, vùng lần trước hiện sẵn — nhấn Enter là quay luôn"><span>Quay video: nhớ vùng chọn lần trước</span><input type="checkbox" class="sw" data-key="rememberRegion"></label>
-      <label class="row" title="Lần bấm PrtSc sau, vùng chụp lần trước hiện sẵn — nhấn Enter là copy luôn"><span>Chụp ảnh: nhớ vùng chụp lần trước</span><input type="checkbox" class="sw" data-key="rememberShot"></label>
-      <label class="row" title="Bấm X chỉ ẩn xuống khay hệ thống, phím PrtSc vẫn dùng được"><span>Bấm X thì thu xuống khay (PrtSc vẫn chụp được)</span><input type="checkbox" class="sw" data-key="closeToTray"></label>
-      <label class="row"><span>Chạy cùng Windows (ẩn ở khay)</span><input type="checkbox" class="sw" data-key="launchAtLogin"></label>
+      <div class="hk"><span>Chọn vùng & quay · đang quay bấm lại để dừng & lưu</span><kbd>Ctrl+PrtSc</kbd></div></div>
+    <div class="grp"><h4>Khi quay</h4>
+      <label class="row" title="Lần chọn vùng quay sau, vùng lần trước hiện sẵn — nhấn Enter là quay luôn"><span>Nhớ vùng chọn lần trước</span><input type="checkbox" class="sw" data-key="rememberRegion"></label>
       <label class="row"><span>Đếm ngược 3 giây trước khi quay</span><input type="checkbox" class="sw" data-key="countdown"></label>
       <label class="row"><span>Thu nhỏ Mon Cam khi đang quay</span><input type="checkbox" class="sw" data-key="hideWhileRec"></label>
       <label class="row"><span>Tự mở màn Xem lại sau khi dừng</span><input type="checkbox" class="sw" data-key="openEditorAfter"></label>
+    </div>
+    <div class="grp"><h4>Thư mục lưu video</h4>
+      <div class="path"><span class="sel ell" id="outDir"></span><button class="btn" id="pickDir">Đổi…</button></div></div>
+  </div>
+  <div class="in tabpane" data-pane="shot" hidden>
+    <div class="grp"><h4>Phím tắt</h4>
+      <div class="hk"><span>Chụp ảnh · trong lúc chụp: <kbd>Enter</kbd> copy, <kbd>Ctrl+S</kbd> lưu</span><kbd>PrtSc</kbd></div></div>
+    <div class="grp"><h4>Khi chụp</h4>
+      <label class="row" title="Lần bấm PrtSc sau, vùng chụp lần trước hiện sẵn — nhấn Enter là copy luôn"><span>Nhớ vùng chụp lần trước</span><input type="checkbox" class="sw" data-key="rememberShot"></label>
+    </div>
+    <div class="grp"><h4>Thư mục lưu ảnh chụp</h4>
+      <div class="path"><span class="sel ell" id="shotDir"></span><button class="btn" id="pickShotDir">Đổi…</button></div></div>
+    <div class="grp"><h4>Chạy nền (để phím tắt luôn dùng được)</h4>
+      <label class="row" title="Bấm X chỉ ẩn xuống khay hệ thống, phím tắt vẫn dùng được"><span>Bấm X thì thu xuống khay</span><input type="checkbox" class="sw" data-key="closeToTray"></label>
+      <label class="row"><span>Chạy cùng Windows (ẩn ở khay)</span><input type="checkbox" class="sw" data-key="launchAtLogin"></label>
     </div>
   </div>
   <footer class="dfoot verrow"><span class="v" id="verTxt"></span><button class="btn" id="wnBtn" data-i="sparkles">What's new</button><button class="ibtn upd" id="updBtn2" title="Kiểm tra cập nhật" data-i="refresh"></button></footer>

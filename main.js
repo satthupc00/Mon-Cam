@@ -488,11 +488,12 @@ function shortErr(e) { return String(e && e.message || e).split('\n').filter(Boo
 
 // ---------- Hiệu ứng click (tuỳ chọn) ----------
 // Bắt chuột toàn hệ thống bằng uiohook, chỉ bật trong lúc quay có bật hiệu ứng click
-let hook = null, fxDip = null, hookOn = false;
+let hook = null, fxDip = null, hookOn = false, keepHook = false, fxListen = false;
 function startClickFx(dip) {
   try {
-    if (!hook) {
-      hook = require('uiohook-napi');
+    if (!hook) hook = require('uiohook-napi');
+    if (!fxListen) {
+      fxListen = true;
       hook.uIOhook.on('mousedown', ev => {
         if (!fxDip || !fxWin || fxWin.isDestroyed()) return;
         const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
@@ -506,7 +507,7 @@ function startClickFx(dip) {
 }
 function stopClickFx() {
   fxDip = null;
-  if (hook && hookOn) { try { hook.uIOhook.stop(); } catch {} hookOn = false; }
+  if (hook && hookOn && !keepHook) { try { hook.uIOhook.stop(); } catch {} hookOn = false; }
 }
 
 // ---------- Khung chờ quay ----------
@@ -630,12 +631,12 @@ let tray = null, quitting = false;
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'src', 'tray.png'));
   tray = new Tray(icon.isEmpty() ? nativeImage.createFromPath(path.join(__dirname, 'src', 'icon.png')).resize({ width: 16, height: 16 }) : icon);
-  tray.setToolTip('Mon Cam · PrtSc chụp ảnh');
+  tray.setToolTip('Mon Cam · PrtSc chụp ảnh · Ctrl+PrtSc quay');
   const menu = Menu.buildFromTemplate([
     { label: 'Mở Mon Cam', click: showMain },
     { type: 'separator' },
     { label: 'Chụp ảnh', accelerator: 'PrintScreen', registerAccelerator: false, click: () => startShot() },
-    { label: 'Chọn vùng & quay', click: () => startMode('region') },
+    { label: 'Chọn vùng & quay', accelerator: 'CmdOrCtrl+PrintScreen', registerAccelerator: false, click: () => startMode('region') },
     { label: 'Dừng quay', click: () => { if (rec) stopRecording(); } },
     { type: 'separator' },
     { label: 'Mở thư mục video', click: () => { fs.mkdirSync(settings.outDir, { recursive: true }); shell.openPath(settings.outDir); } },
@@ -652,10 +653,25 @@ function applyLoginItem() {
 }
 
 // ---------- Phím tắt ----------
-let shotKeyOk = true;
+let shotKeyOk = true, recKeyOk = true;
+function recKey() { if (rec) stopRecording(); else if (!selecting && !armWin) startMode('region'); }
+function listenRecKeyHook() {
+  try {
+    if (!hook) hook = require('uiohook-napi');
+    const { uIOhook, UiohookKey } = hook;
+    let held = false;
+    uIOhook.on('keydown', ev => { if (ev.keycode === UiohookKey.PrintScreen && ev.ctrlKey && !held) { held = true; recKey(); } });
+    uIOhook.on('keyup', ev => { if (ev.keycode === UiohookKey.PrintScreen) held = false; });
+    if (!hookOn) { uIOhook.start(); hookOn = true; }
+    keepHook = true;
+  } catch {}
+}
 function registerKeys() {
   globalShortcut.unregisterAll();
   shotKeyOk = globalShortcut.register('PrintScreen', startShot);
+  // Ctrl+PrtSc: chọn vùng & quay; đang quay thì dừng & lưu. Không đăng ký được (bị Windows giữ) thì nghe qua hook
+  recKeyOk = globalShortcut.register('CommandOrControl+PrintScreen', recKey);
+  if (!recKeyOk) listenRecKeyHook();
   globalShortcut.register('CommandOrControl+Shift+S', startShot);   // phím dự phòng khi PrtSc bị Windows giữ
 }
 
@@ -828,5 +844,5 @@ app.whenReady().then(() => {
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
 });
-app.on('will-quit', () => { globalShortcut.unregisterAll(); stopClickFx(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });
