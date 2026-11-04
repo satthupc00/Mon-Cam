@@ -57,7 +57,7 @@ document.querySelectorAll('input.sw[data-key]').forEach(c => c.addEventListener(
 api.on('settings', s => { S = s; renderSettings(); });
 
 // ---------- màn chính ----------
-const MODE_LABEL = { region: 'Chọn vùng & quay', fullscreen: 'Quay toàn màn hình', window: 'Chọn cửa sổ & quay' };
+const MODE_LABEL = { region: 'Chọn vùng & quay', fullscreen: 'Quay toàn màn hình' };
 function setMode(m) {
   mode = m;
   document.querySelectorAll('#modes .card').forEach(c => c.classList.toggle('on', c.dataset.mode === m));
@@ -85,7 +85,6 @@ function renderSum() {
 
 function startRec() {
   if (recState.state !== 'idle') return api.invoke('rec:stop');
-  if (mode === 'window') return openWindowPicker();
   api.invoke('rec:start', mode);
 }
 $('recBtn').onclick = startRec;
@@ -94,22 +93,6 @@ $('sum').onclick = () => { openDlg('dlgSettings'); requestAnimationFrame(() => s
 
 api.on('rec:state', s => { recState = s; renderRecBtn(); });
 
-async function openWindowPicker() {
-  const g = $('wgrid');
-  g.innerHTML = '<div class="muted">Đang tìm cửa sổ…</div>';
-  openDlg('dlgWindows');
-  const list = (await api.invoke('windows:list').catch(() => null)) || [];
-  if (!list.length) { g.innerHTML = '<div class="muted">Không thấy cửa sổ nào đang mở.</div>'; return; }
-  g.innerHTML = '';
-  list.forEach(w => {
-    const b = document.createElement('button');
-    b.className = 'witem'; b.title = w.title;
-    b.innerHTML = `<div class="wi"></div><span>${esc(w.title)}</span>`;
-    if (w.img) b.querySelector('.wi').style.backgroundImage = `url("${w.img}")`;
-    b.onclick = () => { closeDlg('dlgWindows'); api.invoke('rec:start', 'window', { id: w.id, title: w.title }); };
-    g.appendChild(b);
-  });
-}
 
 async function loadRecent() {
   const list = (await api.invoke('files:list').catch(() => null)) || [];

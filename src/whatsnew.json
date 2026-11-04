@@ -1,11 +1,12 @@
 {
-  "version": "1.8.1",
+  "version": "1.9.0",
   "date": "2026-11-04",
-  "new": [],
-  "improved": [
-    "Hộp Cài đặt không còn nhảy vị trí khi chuyển tab"
+  "new": [
+    "Chọn vùng quay (Ctrl+PrtSc hoặc nút Chọn vùng): rê chuột lên cửa sổ nào là cửa sổ đó được viền đỏ, bấm 1 cái để chọn đúng khung cửa sổ; kéo chuột thì vẽ vùng như cũ"
   ],
-  "fixed": [
-    "Hộp Cài đặt bị cắt mất phần dưới và không cuộn được: giờ luôn vừa cửa sổ, phần giữa cuộn được"
-  ]
+  "improved": [
+    "Bỏ ô Một cửa sổ ở màn chính (đã thay bằng rê chuột chọn cửa sổ)",
+    "Màn chính không còn bị cắt phần trên khi cửa sổ app thấp"
+  ],
+  "fixed": []
 }

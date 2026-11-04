@@ -187,7 +187,7 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 /* ===== v1.1: màn chính gọn 1 cột ===== */
 .home{flex-direction:column;background:var(--stage)}
 .home .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:18px 16px;min-height:0}
-.home .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:520px}
+.home .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;max-width:400px}
 .home .card{align-items:center;justify-content:center;text-align:center;gap:8px;padding:14px 8px;min-height:92px}
 .home .card b{font-size:13px;white-space:nowrap}
 .home .card .ic{width:38px;height:38px}
@@ -307,3 +307,4 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .scrim{display:flex;align-items:flex-start;justify-content:center}
 .dlg{max-height:calc(100vh - 82px);min-height:0}
 .dlg .in{flex:1 1 auto;min-height:0;overflow-y:auto}
+.home .hero{justify-content:safe center}   /* cửa sổ thấp: không cắt mất phần trên */

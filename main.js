@@ -6,7 +6,7 @@ const { pathToFileURL } = require('url');
 const { Recorder, BT709 } = require('./lib/recorder');
 const { run, probe, ffmpegPath } = require('./lib/ff');
 const { joinFiles, muxSegment } = require('./lib/compose');
-const { windowRect, hwndFromSourceId } = require('./lib/winrect');
+const winlist = require('./lib/winlist');
 const { renderSegments, makeGif, cleanSegs } = require('./lib/segments');
 
 const APP_TITLE = 'Mon Cam';
@@ -215,6 +215,8 @@ async function startSelection(opts = {}) {
     try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: maxW, height: maxH } }); } catch {}
   }
   const cursorId = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id;
+  // Chọn vùng quay: lấy khung các cửa sổ đang mở để rê chuột là bắt dính (gửi sau, không chờ)
+  const winsP = !opts.shot && isWin ? winlist.listWindows().catch(() => []) : Promise.resolve([]);
   return new Promise(resolve => {
     const done = res => {
       overlays.forEach(parkOverlay); overlays = [];
@@ -261,6 +263,18 @@ async function startSelection(opts = {}) {
       const o = overlayFor(d);
       o._display = d;
       const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
+      o._ready.then(() => winsP.then(list => {
+        if (o.isDestroyed() || !selecting || !list.length) return;
+        const b = d.bounds, rects = [];
+        for (const r of list) {
+          const q = screen.screenToDipRect(null, r);
+          const x1 = Math.max(q.x, b.x), y1 = Math.max(q.y, b.y), x2 = Math.min(q.x + q.width, b.x + b.width), y2 = Math.min(q.y + q.height, b.y + b.height);
+          if (x2 - x1 < 40 || y2 - y1 < 40) continue;
+          rects.push({ x: x1 - b.x, y: y1 - b.y, w: x2 - x1, h: y2 - y1 });
+          if (x1 <= b.x + 1 && y1 <= b.y + 1 && x2 >= b.x + b.width - 1 && y2 >= b.y + b.height - 1) break;   // phủ kín màn: phía dưới bị che hết
+        }
+        o.webContents.send('sel:windows', rects);
+      }));
       o._ready.then(() => {
         if (o.isDestroyed() || !selecting) return;
         if (!o.isVisible()) o.showInactive();
@@ -575,24 +589,6 @@ async function startMode(mode, extra) {
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     return beginRecording({ dip: d.bounds, phys: toPhysical(d.bounds), full: true });
   }
-  if (mode === 'window' && extra) return recordWindow(extra);
-}
-
-// Quay 1 cửa sổ = quay đúng khung của cửa sổ đó trên màn hình (chụp được cả trình duyệt,
-// app dùng card đồ hoạ — kiểu chụp thẳng cửa sổ qua GDI chỉ ra màu trắng)
-async function recordWindow(extra) {
-  const hwnd = hwndFromSourceId(extra.id);
-  if (!isWin || !hwnd) { notify('Chế độ quay cửa sổ chỉ chạy trên Windows', 'error'); return; }
-  let r;
-  try { r = await windowRect(hwnd); } catch (e) { notify('Không lấy được cửa sổ: ' + shortErr(e), 'error'); return; }
-  let dip = screen.screenToDipRect(null, r);
-  const d = screen.getDisplayMatching(dip).bounds;   // cắt phần nằm ngoài màn hình
-  const x1 = Math.max(dip.x, d.x), y1 = Math.max(dip.y, d.y);
-  const x2 = Math.min(dip.x + dip.width, d.x + d.width), y2 = Math.min(dip.y + dip.height, d.y + d.height);
-  if (x2 - x1 < 16 || y2 - y1 < 16) { notify('Cửa sổ này đang nằm ngoài màn hình', 'error'); return; }
-  dip = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
-  const full = dip.width >= d.width - 2 && dip.height >= d.height - 2;
-  return beginRecording({ dip, phys: toPhysical(dip), full });
 }
 
 // ---------- Chụp ảnh ----------
@@ -717,12 +713,7 @@ function setupIpc() {
   ipcMain.handle('rec:cancel', async () => { await abortRec(); showMain(); notify('Đã huỷ bản quay'); });
   ipcMain.handle('rec:state', recState);
 
-  ipcMain.handle('windows:list', async () => {
-    const own = new Set(BrowserWindow.getAllWindows().map(w => w.getMediaSourceId()));
-    const list = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 320, height: 200 } });
-    return list.filter(s => !own.has(s.id) && s.name && s.name !== APP_TITLE)
-      .map(s => ({ id: s.id, title: s.name, img: s.thumbnail.isEmpty() ? null : s.thumbnail.toDataURL() }));
-  });
+
 
   ipcMain.handle('files:list', async () => {
     let names = [];
@@ -838,11 +829,12 @@ app.whenReady().then(() => {
   setupAudioCapture();
   createMain();
   createTray();
+  if (isWin) setTimeout(() => winlist.warm(), 2500);   // tiến trình hỏi danh sách cửa sổ chạy sẵn
   setTimeout(warmOverlays, 1500);
   screen.on('display-added', warmOverlays); screen.on('display-removed', warmOverlays); screen.on('display-metrics-changed', warmOverlays);
   applyLoginItem();
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
 });
-app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); winlist.stop(); });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });

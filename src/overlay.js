@@ -6,6 +6,9 @@ let cfg = { scale: 1, w: innerWidth, h: innerHeight, cursor: true, audio: true, 
 let sel = null;            // {x,y,w,h} theo DIP trong màn này
 let drag = null;           // {mode,sx,sy,orig}
 let img = null;
+let wins = [], hover = null, downHover = null;   // khung các cửa sổ (trên cùng trước) để bắt dính khi chọn vùng quay
+const hovEl = $('hov');
+api.on('sel:windows', r => { wins = r || []; });
 
 const HINT_REC = $('hint').innerHTML;
 api.on('sel:init', async c => {
@@ -33,7 +36,7 @@ api.on('sel:init', async c => {
 });
 // Cửa sổ được giấu đi để dùng lại lần sau: xoá sạch trạng thái
 function resetState() {
-  sel = null; drag = null;
+  sel = null; drag = null; wins = []; hover = null; downHover = null; hovEl.style.display = 'none';
   Ann.cancelText(); Ann.items = []; Ann.cur = null; Ann.tool = null;
   if (Ann.ctx) Ann.redraw();   // xoá nét vẽ của lần chụp trước
   document.body.classList.remove('tool-on', 'tool-text');
@@ -153,11 +156,28 @@ function shade(r) {
   Object.assign(rt.style, { left: x + w + 'px', top: y + 'px', width: Math.max(0, W - x - w) + 'px', height: h + 'px' });
 }
 
+function drawHover() {
+  const h = !cfg.shot && !drag && hover;
+  if (!h) { hovEl.style.display = 'none'; if (!sel) tag.style.display = 'none'; return; }
+  Object.assign(hovEl.style, { display: 'block', left: h.x + 'px', top: h.y + 'px', width: h.w + 'px', height: h.h + 'px' });
+  if (!sel) {   // chưa có vùng chọn: nhãn kích thước theo cửa sổ đang rê
+    tag.textContent = `${phys(h.w)} × ${phys(h.h)}`;
+    tag.style.display = 'block'; tag.style.left = h.x + 'px'; tag.style.top = (h.y > 30 ? h.y - 28 : h.y + 6) + 'px';
+  }
+}
+const inRect = (r, x, y) => r && x >= r.x && y >= r.y && x <= r.x + r.w && y <= r.y + r.h;
+function updateHover(x, y) {
+  if (cfg.shot || drag) return;
+  const h = inRect(sel, x, y) ? null : (wins.find(r => inRect(r, x, y)) || null);
+  if (h !== hover) { hover = h; draw(); }
+}
+
 function draw() {
-  shade(sel);
+  shade(sel || (!cfg.shot && hover) || null);
+  if (sel) drawHover();
   if (cfg.shot && (Ann.items.length || Ann.cur)) Ann.redraw();
   selEl.classList.toggle('drawing', !!(cfg.shot && Ann.tool));
-  if (!sel) { selEl.style.display = tag.style.display = bar.style.display = 'none'; return; }
+  if (!sel) { selEl.style.display = tag.style.display = bar.style.display = 'none'; drawHover(); return; }
   Object.assign(selEl.style, { display: 'block', left: sel.x - 1 + 'px', top: sel.y - 1 + 'px', width: sel.w + 2 + 'px', height: sel.h + 2 + 'px' });
   tag.textContent = `${phys(sel.w)} × ${phys(sel.h)}`;
   tag.style.display = 'block';
@@ -210,12 +230,13 @@ addEventListener('pointerdown', e => {
   const h = e.target.dataset && e.target.dataset.h;
   if (h) drag = { mode: h, sx: e.clientX, sy: e.clientY, orig: { ...sel } };
   else if (sel && e.target === selEl) drag = { mode: 'move', sx: e.clientX, sy: e.clientY, orig: { ...sel } };
-  else { drag = { mode: 'new', sx: e.clientX, sy: e.clientY }; sel = null; api.send('sel:clear-others'); }
+  else { downHover = hover; drag = { mode: 'new', sx: e.clientX, sy: e.clientY }; sel = null; api.send('sel:clear-others'); }
   document.body.setPointerCapture(e.pointerId);
   draw();
 });
 addEventListener('pointermove', e => {
   if (Ann.cur) { Ann.move(e); return; }
+  updateHover(e.clientX, e.clientY);
   showLoupe(e.clientX, e.clientY, !bar.contains(e.target) && !(cfg.shot && Ann.tool));
   if (!drag) return;
   const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy, o = drag.orig;
@@ -237,7 +258,11 @@ addEventListener('pointerup', e => {
   const wasNew = drag.mode === 'new', moved = Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy);
   const orig = drag.orig;
   drag = null;
-  if (wasNew && moved < 5) { confirm(true); return; }   // bấm 1 lần = cả màn hình
+  if (wasNew && moved < 5) {
+    // bấm 1 cái lên cửa sổ đang được viền đỏ = chọn đúng cửa sổ đó; bấm chỗ trống = cả màn hình
+    if (!cfg.shot && downHover) { sel = { ...downHover }; hover = null; downHover = null; }
+    else { confirm(true); return; }
+  }
   if (!wasNew && orig && (!sel || sel.w < 8 || sel.h < 8)) sel = orig;   // kéo teo về 0 thì trả lại vùng cũ
   // Quay video: kéo xong là chuyển sang khung chờ quay (màn thật, bấm xuyên qua được)
   if (!cfg.shot && sel && sel.w >= 8 && sel.h >= 8) {
