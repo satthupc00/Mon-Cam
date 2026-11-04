@@ -3,7 +3,6 @@ const $ = id => document.getElementById(id);
 if (api.isElectron) document.documentElement.classList.add('electron');
 
 let S = {};             // cài đặt
-let mode = 'region';
 let recState = { state: 'idle' };
 let updState = null;
 
@@ -56,63 +55,31 @@ document.querySelectorAll('input.sw[data-key]').forEach(c => c.addEventListener(
 
 api.on('settings', s => { S = s; renderSettings(); });
 
-// ---------- màn chính ----------
-const MODE_LABEL = { region: 'Chọn vùng & quay', fullscreen: 'Quay toàn màn hình' };
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll('#modes .card').forEach(c => c.classList.toggle('on', c.dataset.mode === m));
-  renderRecBtn();
-  try { localStorage.setItem('mode', m); } catch {}
-}
-$('modes').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) setMode(c.dataset.mode); });
-$('modes').addEventListener('dblclick', e => { const c = e.target.closest('.card'); if (c) startRec(); });
-
+// ---------- màn chính: chỉ 2 nút + nút mở clip vừa quay ----------
 function renderRecBtn() {
   const busy = recState.state !== 'idle';
-  $('recBtn').classList.toggle('rec', busy);
-  $('recLabel').textContent = busy ? 'Dừng quay' : MODE_LABEL[mode];
-  $('recBtn').title = busy ? 'Dừng & lưu (Ctrl+PrtSc)' : MODE_LABEL[mode];
+  $('recBtn').classList.toggle('busy', busy);
+  $('recLabel').textContent = busy ? 'Dừng quay' : 'Chọn vùng quay';
+  $('recBtn').title = busy ? 'Dừng & lưu (Ctrl+PrtSc)' : 'Chọn vùng rồi quay (Ctrl+PrtSc)';
 }
-function renderSum() {
-  const gif = S.format === 'gif';
-  const parts = [`<b>${gif ? 'GIF' : 'MP4'}</b>`, `${S.fps} fps`, S.cursor ? 'có chuột' : 'ẩn chuột'];
-  if (!gif) parts.push(S.audio ? 'có âm thanh máy' : 'không tiếng');
-  if (S.countdown) parts.push('đếm ngược 3s');
-  let last = '';
-  last = '<br><kbd>Ctrl+PrtSc</kbd> chọn vùng & quay' + (S.rememberRegion !== false && S.lastRegion && S.lastRegion.phys ? ` · vùng trước ${S.lastRegion.phys.w}×${S.lastRegion.phys.h}` : '');
-  $('sum').innerHTML = parts.join(' · ') + last;
-}
-
+function renderSum() {}
 function startRec() {
   if (recState.state !== 'idle') return api.invoke('rec:stop');
-  api.invoke('rec:start', mode);
+  api.invoke('rec:start', 'region');
 }
 $('recBtn').onclick = startRec;
 $('shotBtn').onclick = () => api.invoke('shot:start');
-$('sum').onclick = () => { openDlg('dlgSettings'); requestAnimationFrame(() => setTab('rec')); };
-
 api.on('rec:state', s => { recState = s; renderRecBtn(); });
 
-
+let lastClip = null;
 async function loadRecent() {
   const list = (await api.invoke('files:list').catch(() => null)) || [];
-  const box = $('recent');
-  box.innerHTML = '';
-  if (!list.length) {
-    box.innerHTML = '<div class="empty"><b>Chưa có bản quay nào</b><span>Chọn kiểu quay rồi bấm nút đỏ, hoặc bấm <kbd>PrtSc</kbd> để chụp ảnh.</span></div>';
-    return;
-  }
-  for (const it of list) {
-    const b = document.createElement('button');
-    b.className = 'rec-item'; b.title = it.name + ' · ' + fmtB(it.size);
-    const gif = /\.gif$/i.test(it.name);
-    b.innerHTML = `<div class="thumb"><span class="fmt ${gif ? 'gif' : ''}">${gif ? 'GIF' : 'MP4'}</span><span class="dur" hidden></span></div><span class="meta">${esc(it.name)}</span>`;
-    b.onclick = () => openEditor(it.file);
-    box.appendChild(b);
-    api.invoke('files:thumb', it.file).then(u => { if (u) b.querySelector('.thumb').style.backgroundImage = `url("${u}")`; });
-  }
+  lastClip = list[0] || null;
+  $('lastBtn').disabled = !lastClip;
+  $('lastTxt').textContent = lastClip ? 'Mở clip vừa quay' : 'Chưa có clip nào';
+  $('lastBtn').title = lastClip ? lastClip.name + ' · ' + fmtB(lastClip.size) : 'Quay xong clip sẽ hiện ở đây';
 }
-$('seeAll').onclick = () => api.invoke('files:openDir');
+$('lastBtn').onclick = () => { if (lastClip) openEditor(lastClip.file); };
 $('openDir').onclick = () => api.invoke('files:openDir');
 
 async function refreshFoot() {
@@ -781,8 +748,7 @@ addEventListener('keydown', e => {
 (async () => {
   S = { format: 'mp4', fps: 30, quality: 'medium', cursor: true, audio: true, gifFps: 15, gifScale: 75, outDir: '', ...((await api.invoke('settings:get').catch(() => null)) || {}) };
   appInfo = (await api.invoke('app:info').catch(() => null)) || {};
-  try { const m = localStorage.getItem('mode'); if (MODE_LABEL[m]) mode = m; } catch {}
-  setMode(mode);
+  renderRecBtn();
   renderSettings(); syncGifChips(); renderUpd();
   loadRecent();
   recState = (await api.invoke('rec:state').catch(() => null)) || { state: 'idle' };

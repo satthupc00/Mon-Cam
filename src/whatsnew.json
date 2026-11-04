@@ -1,12 +1,13 @@
 {
-  "version": "1.9.1",
+  "version": "2.0.0",
   "date": "2026-11-04",
   "new": [
-    "Khung chờ quay có nút Chọn lại: bỏ vùng hiện tại và kéo chọn vùng khác",
-    "Bấm Esc khi khung chờ quay đang mở để tắt khung, trả màn hình về bình thường"
+    "Màn chính tối giản: chỉ còn 2 nút Chọn vùng quay (Ctrl+PrtSc) và Chọn vùng chụp (PrtSc)",
+    "Nút Mở clip vừa quay: mở ngay clip mới nhất trong màn Xem lại & cắt"
   ],
   "improved": [
-    "Thanh nút dưới khung chờ quay gọn lại, chỉ còn Quay · Chọn lại · ✕ (chuột và âm thanh chỉnh trong Cài đặt)"
+    "Cửa sổ app nhỏ gọn hơn; mọi thông tin và tuỳ chọn khác nằm trong Cài đặt",
+    "Bỏ danh sách ảnh thu nhỏ các clip (xem tất cả bằng nút thư mục trên cùng)"
   ],
   "fixed": []
 }

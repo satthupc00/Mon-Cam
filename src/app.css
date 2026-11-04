@@ -308,3 +308,23 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .dlg{max-height:calc(100vh - 82px);min-height:0}
 .dlg .in{flex:1 1 auto;min-height:0;overflow-y:auto}
 .home .hero{justify-content:safe center}   /* cửa sổ thấp: không cắt mất phần trên */
+
+/* ===== v2.0: màn chính tối giản — 2 nút to + nút mở clip vừa quay ===== */
+.home .hero{gap:12px;padding:20px 24px}
+.bigbtn{width:100%;max-width:340px;height:68px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);
+  display:flex;align-items:center;gap:14px;padding:0 16px;cursor:pointer;text-align:left;position:relative;overflow:hidden}
+.bigbtn:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.bigbtn .bi{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:var(--chrome);color:var(--red)}
+.bigbtn .bi svg{width:20px;height:20px}
+.bigbtn .bt{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.bigbtn b{font-size:15px;white-space:nowrap}
+.bigbtn kbd{flex:0 0 auto}
+.bigbtn.rec{background:var(--red);border-color:var(--red);color:#fff}
+.bigbtn.rec:hover{background:#F04447;box-shadow:0 10px 24px rgba(229,56,59,.4)}
+.bigbtn.rec .bi{background:rgba(0,0,0,.18)}
+.bigbtn.rec .bi i{width:14px;height:14px;border-radius:50%;background:#fff;transition:border-radius var(--t-med) var(--ease-out)}
+.bigbtn.rec kbd{background:rgba(0,0,0,.2);border-color:rgba(0,0,0,.25);color:#fff}
+.bigbtn.rec.busy .bi i{border-radius:3px;animation:pulse 1s ease-in-out infinite}
+.lastbtn{margin-top:4px;height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.lastbtn svg{width:15px;height:15px}
+.lastbtn:not(:disabled):hover{color:var(--text);border-color:var(--red);transform:translateY(-1px)}

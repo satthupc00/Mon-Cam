@@ -25,19 +25,15 @@
   <!-- ========== MÀN CHÍNH ========== -->
   <div class="body home" id="home">
     <div class="hero fx">
-      <div class="cards" id="modes">
-        <button class="card" data-mode="region" title="Kéo chuột chọn khu vực cần quay, hoặc rê lên 1 cửa sổ rồi bấm để chọn nhanh"><span class="ic" data-i="region"></span><b>Chọn vùng</b></button>
-        <button class="card" data-mode="fullscreen" title="Quay cả màn hình đang có chuột"><span class="ic" data-i="monitor"></span><b>Toàn màn hình</b></button>
-      </div>
-      <div class="actions">
-        <button class="recbtn" id="recBtn"><i></i><span id="recLabel">Chọn vùng & quay</span></button>
-        <button class="shotbtn" id="shotBtn" title="Chụp ảnh màn hình (PrintScreen)" data-i="camera">Chụp ảnh <kbd>PrtSc</kbd></button>
-      </div>
-      <button class="sumline" id="sum" title="Đổi định dạng, fps, chuột, âm thanh trong Cài đặt"></button>
-    </div>
-    <div class="recent fx">
-      <h4>Vừa quay <a id="seeAll" title="Mở thư mục lưu">Xem tất cả</a></h4>
-      <div class="reclist" id="recent"></div>
+      <button class="bigbtn rec" id="recBtn" title="Chọn vùng rồi quay (Ctrl+PrtSc)">
+        <span class="bi"><i></i></span>
+        <span class="bt"><b id="recLabel">Chọn vùng quay</b><kbd id="recKey">Ctrl+PrtSc</kbd></span>
+      </button>
+      <button class="bigbtn shot" id="shotBtn" title="Chọn vùng rồi chụp ảnh (PrtSc)">
+        <span class="bi" data-i="camera"></span>
+        <span class="bt"><b>Chọn vùng chụp</b><kbd>PrtSc</kbd></span>
+      </button>
+      <button class="lastbtn" id="lastBtn" data-i="film" disabled><span id="lastTxt">Chưa có clip nào</span></button>
     </div>
   </div>
 

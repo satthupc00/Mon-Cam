@@ -48,13 +48,13 @@ let win = null;
 // ---------- Cửa sổ chính ----------
 // Màn chính gọn; khi mở màn Xem lại & cắt thì cửa sổ nở rộng ra, quay về thì thu lại
 const SIZES = {
-  home: { w: 620, h: 560, minW: 520, minH: 480, key: 'homeBounds' },
+  home: { w: 440, h: 400, minW: 430, minH: 340, key: 'homeBounds2' },
   editor: { w: 1040, h: 700, minW: 860, minH: 580, key: 'edBounds' },
 };
 let layout = 'home';
 function createMain() {
   const z = SIZES.home;
-  const b = settings.homeBounds || {};
+  const b = settings.homeBounds2 || {};
   win = new BrowserWindow({
     title: APP_TITLE, backgroundColor: '#1F2126',
     width: b.width || z.w, height: b.height || z.h, x: b.x, y: b.y, minWidth: z.minW, minHeight: z.minH,
