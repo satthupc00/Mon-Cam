@@ -4,7 +4,7 @@ const selEl = $('sel'), tag = $('tag'), bar = $('bar');
 let cfg = { scale: 1, cursor: true, audio: true, gif: false };
 let sel = null, drag = null, hit = false;
 
-api.on('arm:init', c => { cfg = c; sel = { ...c.rect }; syncToggles(); draw(); });
+api.on('arm:init', c => { cfg = c; sel = { ...c.rect }; draw(); });
 
 const phys = v => Math.round(v * cfg.scale);
 function norm(r) {
@@ -35,30 +35,12 @@ function draw() {
 }
 addEventListener('resize', draw);
 
-function syncToggles() {
-  const c = $('tCursor'), a = $('tAudio');
-  c.className = 'ibtn ' + (cfg.cursor ? 'on' : 'off'); c.innerHTML = icon('cursor');
-  c.title = cfg.cursor ? 'Đang quay kèm chuột · bấm để ẩn chuột' : 'Đang ẩn chuột · bấm để hiện chuột';
-  const on = cfg.audio && !cfg.gif;
-  a.className = 'ibtn ' + (on ? 'on' : 'off'); a.innerHTML = icon(on ? 'vol' : 'mute'); a.disabled = cfg.gif;
-  a.title = cfg.gif ? 'GIF không có âm thanh' : (cfg.audio ? 'Đang thu âm thanh máy · bấm để tắt' : 'Không thu âm thanh · bấm để bật');
-}
-$('tCursor').onclick = () => { cfg.cursor = !cfg.cursor; syncToggles(); };
-$('tAudio').onclick = () => { cfg.audio = !cfg.audio; syncToggles(); };
 $('cancel').onclick = () => api.send('arm:cancel');
+$('redo').onclick = () => api.send('arm:redo');
 $('go').onclick = () => {
   if (!sel || sel.w < 8 || sel.h < 8) return;
   api.send('arm:go', { rect: { x: Math.round(sel.x), y: Math.round(sel.y), width: Math.round(sel.w), height: Math.round(sel.h) }, cursor: cfg.cursor, audio: cfg.audio });
 };
-bar.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
-  let w, h;
-  if (b.dataset.p === 'square') { w = h = Math.min(sel.w, sel.h); }
-  else { const [pw, ph] = b.dataset.p.split('x').map(Number); w = pw / cfg.scale; h = ph / cfg.scale; }
-  w = Math.min(w, innerWidth); h = Math.min(h, innerHeight);
-  const cx = sel.x + sel.w / 2, cy = sel.y + sel.h / 2;
-  sel = norm({ x: Math.min(Math.max(0, cx - w / 2), innerWidth - w), y: Math.min(Math.max(0, cy - h / 2), innerHeight - h), w, h });
-  draw();
-});
 
 // Chuột chỉ bị giữ lại khi đang ở trên thanh nút / nút kéo mép / nhãn; còn lại bấm xuyên qua
 const interactive = el => !!(el && el.closest && el.closest('.bar, .h, .tag'));

@@ -284,7 +284,7 @@ async function startSelection(opts = {}) {
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: d.id === cursorId,
-          last: opts.shot ? (settings.rememberShot ? lastRectOn(d, settings.lastShot) : null) : (settings.rememberRegion ? lastRectOn(d) : null),
+          last: opts.shot ? (settings.rememberShot ? lastRectOn(d, settings.lastShot) : null) : (settings.rememberRegion && !opts.noLast ? lastRectOn(d) : null),
         });
       });
       return o;
@@ -550,7 +550,8 @@ function armRegion(d, rect, cursor, audio) {
     const finish = res => {
       if (settled) return;          // đóng cửa sổ cũng bắn 'closed' → chỉ nhận kết quả đầu tiên
       settled = true;
-      ['arm:hit', 'arm:go', 'arm:cancel'].forEach(c => ipcMain.removeAllListeners(c));
+      ['arm:hit', 'arm:go', 'arm:cancel', 'arm:redo'].forEach(c => ipcMain.removeAllListeners(c));
+      try { globalShortcut.unregister('Escape'); } catch {}
       if (armWin === w) armWin = null;
       resolve(res);
       if (!w.isDestroyed()) w.destroy();
@@ -558,6 +559,9 @@ function armRegion(d, rect, cursor, audio) {
     ipcMain.on('arm:hit', (e, on) => { if (!w.isDestroyed()) w.setIgnoreMouseEvents(!on, { forward: true }); });
     ipcMain.on('arm:go', (e, r) => finish(r));
     ipcMain.on('arm:cancel', () => finish(null));
+    ipcMain.on('arm:redo', () => finish({ redo: true }));
+    // khung bấm xuyên qua nên không nhận phím → giữ phím Esc chỉ trong lúc khung đang mở
+    try { globalShortcut.register('Escape', () => finish(null)); } catch {}
     w.on('closed', () => finish(null));
   });
 }
@@ -566,16 +570,21 @@ function armRegion(d, rect, cursor, audio) {
 async function startMode(mode, extra) {
   if (rec || selecting) return;
   if (mode === 'region') {
-    let sel = await startSelection();
+    let sel = await startSelection(), wasVisible = sel && sel.mainWasVisible;
     if (!sel) return;
-    if (sel.arm) {   // khung chờ quay: người dùng vẫn thao tác được bên dưới, bấm Quay để bắt đầu
-      const wasVisible = sel.mainWasVisible;
+    while (sel.arm) {   // khung chờ quay: người dùng vẫn thao tác được bên dưới, bấm Quay để bắt đầu
       const a = await armRegion(sel.display, sel.rect, sel.cursor, sel.audio);
       if (!a) { if (wasVisible) showMain(); return; }
+      if (a.redo) {      // Chọn lại: mở lại màn chọn vùng, không hiện sẵn vùng cũ
+        sel = await startSelection({ noLast: true });
+        if (!sel) { if (wasVisible) showMain(); return; }
+        continue;
+      }
       const d = sel.display;
       const dip = { x: d.bounds.x + a.rect.x, y: d.bounds.y + a.rect.y, width: a.rect.width, height: a.rect.height };
       settings.cursor = a.cursor; settings.audio = a.audio; saveSettings(); send('settings', settings);
       sel = { dip, phys: toPhysical(dip) };
+      break;
     }
     if (!sel.full) { settings.lastRegion = sel; saveSettings(); }
     return beginRecording(sel);

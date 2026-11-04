@@ -1,12 +1,12 @@
 {
-  "version": "1.9.0",
+  "version": "1.9.1",
   "date": "2026-11-04",
   "new": [
-    "Chọn vùng quay (Ctrl+PrtSc hoặc nút Chọn vùng): rê chuột lên cửa sổ nào là cửa sổ đó được viền đỏ, bấm 1 cái để chọn đúng khung cửa sổ; kéo chuột thì vẽ vùng như cũ"
+    "Khung chờ quay có nút Chọn lại: bỏ vùng hiện tại và kéo chọn vùng khác",
+    "Bấm Esc khi khung chờ quay đang mở để tắt khung, trả màn hình về bình thường"
   ],
   "improved": [
-    "Bỏ ô Một cửa sổ ở màn chính (đã thay bằng rê chuột chọn cửa sổ)",
-    "Màn chính không còn bị cắt phần trên khi cửa sổ app thấp"
+    "Thanh nút dưới khung chờ quay gọn lại, chỉ còn Quay · Chọn lại · ✕ (chuột và âm thanh chỉnh trong Cài đặt)"
   ],
   "fixed": []
 }
