@@ -1,14 +1,11 @@
 {
-  "version": "1.8.0",
+  "version": "1.8.1",
   "date": "2026-11-04",
-  "new": [
-    "Phím tắt Ctrl+PrtSc: mở màn chọn vùng để quay; đang quay bấm lại để dừng và lưu"
-  ],
+  "new": [],
   "improved": [
-    "Cài đặt chia 2 tab Quay phim / Chụp ảnh cho gọn",
-    "Bỏ đoạn hướng dẫn về Snipping Tool trong Cài đặt"
+    "Hộp Cài đặt không còn nhảy vị trí khi chuyển tab"
   ],
   "fixed": [
-    "Nút đóng (X) của hộp Cài đặt và các hộp thoại khác không còn bị 3 nút cửa sổ đè lên"
+    "Hộp Cài đặt bị cắt mất phần dưới và không cuộn được: giờ luôn vừa cửa sổ, phần giữa cuộn được"
   ]
 }

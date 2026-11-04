@@ -303,3 +303,7 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .tab.on{color:#fff}
 .tabbar{position:absolute;bottom:-1px;left:0;height:2px;background:var(--red);border-radius:2px;transition:left var(--t-med) var(--ease-out),width var(--t-med) var(--ease-out)}
 .tabpane{animation:rise .25s var(--ease-out)}
+/* hộp thoại luôn vừa trong cửa sổ, phần giữa tự cuộn */
+.scrim{display:flex;align-items:flex-start;justify-content:center}
+.dlg{max-height:calc(100vh - 82px);min-height:0}
+.dlg .in{flex:1 1 auto;min-height:0;overflow-y:auto}
