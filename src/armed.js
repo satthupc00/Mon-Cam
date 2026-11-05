@@ -26,11 +26,12 @@ function draw() {
   Object.assign(selEl.style, { left: x - 1 + 'px', top: y - 1 + 'px', width: w + 2 + 'px', height: h + 2 + 'px' });
   tag.innerHTML = icon('region') + `${phys(w)} × ${phys(h)}`;
   tag.style.left = x + 'px';
-  tag.style.top = (y > 30 ? y - 28 : y + 6) + 'px';
+  tag.style.left = x + 6 + 'px';
+  tag.style.top = y + 6 + 'px';   // nhãn kích thước nằm trong góc khung
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
-  let bx = Math.min(Math.max(4, x), W - bw - 4), by = y + h + 10;
-  if (by + bh > H - 4) by = y - bh - 36;
-  if (by < 4) by = y + h - bh - 10;
+  let bx = Math.min(Math.max(4, x), W - bw - 4), by = y - bh - 10;   // thanh nút phía trên khung
+  if (by < 4) by = y + h + 10;
+  if (by + bh > H - 4) by = y + 40;
   bar.style.left = bx + 'px'; bar.style.top = by + 'px';
 }
 addEventListener('resize', draw);

@@ -1,13 +1,12 @@
 {
-  "version": "2.0.0",
-  "date": "2026-11-04",
+  "version": "2.0.1",
+  "date": "2026-11-05",
   "new": [
-    "Màn chính tối giản: chỉ còn 2 nút Chọn vùng quay (Ctrl+PrtSc) và Chọn vùng chụp (PrtSc)",
-    "Nút Mở clip vừa quay: mở ngay clip mới nhất trong màn Xem lại & cắt"
+    "Chụp ảnh: thêm công cụ vẽ đường thẳng (phím L, giữ Shift để thẳng ngang/dọc/chéo)"
   ],
   "improved": [
-    "Cửa sổ app nhỏ gọn hơn; mọi thông tin và tuỳ chọn khác nằm trong Cài đặt",
-    "Bỏ danh sách ảnh thu nhỏ các clip (xem tất cả bằng nút thư mục trên cùng)"
+    "Chụp ảnh: bỏ bút tô sáng; ô màu chỉ còn đỏ, đen và ô chọn màu tự do",
+    "Thanh nút của khung chụp / khung quay nằm phía trên khung; nhãn kích thước vào trong góc khung"
   ],
   "fixed": []
 }

@@ -24,6 +24,7 @@ const ICONS = {
   download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
   stop:'<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/>',
   camera:'<path d="M14.5 4h-5L7.5 6.5H4a2 2 0 0 0-2 2V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-3.5z"/><circle cx="12" cy="13" r="3.5"/>',
+  line:'<path d="M5 19L19 5"/>',
   arrow:'<path d="M5 19L19 5M9 5h10v10"/>',
   rect:'<rect x="4" y="6" width="16" height="12" rx="1.5"/>',
   text:'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',

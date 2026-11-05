@@ -34,6 +34,11 @@ const Ann = {
     if (!this.cur) return false;
     const x = e.clientX, y = e.clientY;
     if (this.cur.pts) this.cur.pts.push([x, y]);
+    else if (e.shiftKey && (this.cur.t === 'line' || this.cur.t === 'arrow')) {   // Shift = thẳng ngang/dọc/chéo 45°
+      const dx = x - this.cur.x1, dy = y - this.cur.y1, len = Math.hypot(dx, dy);
+      const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+      this.cur.x2 = this.cur.x1 + Math.cos(a) * len; this.cur.y2 = this.cur.y1 + Math.sin(a) * len;
+    }
     else if (e.shiftKey && (this.cur.t === 'rect' || this.cur.t === 'blur')) {   // Shift = hình vuông
       const d = Math.max(Math.abs(x - this.cur.x1), Math.abs(y - this.cur.y1));
       this.cur.x2 = this.cur.x1 + d * Math.sign(x - this.cur.x1 || 1);
@@ -99,7 +104,9 @@ const Ann = {
     for (const it of list) {
       g.save();
       g.strokeStyle = g.fillStyle = it.c; g.lineCap = 'round'; g.lineJoin = 'round';
-      if (it.t === 'rect') {
+      if (it.t === 'line') {
+        g.lineWidth = 4 * (it.k || 1); g.beginPath(); g.moveTo(it.x1, it.y1); g.lineTo(it.x2, it.y2); g.stroke();
+      } else if (it.t === 'rect') {
         g.lineWidth = 3 * (it.k || 1); g.strokeRect(Math.min(it.x1, it.x2), Math.min(it.y1, it.y2), Math.abs(it.x2 - it.x1), Math.abs(it.y2 - it.y1));
       } else if (it.t === 'arrow') {
         const k = it.k || 1, w = 4 * k, ang = Math.atan2(it.y2 - it.y1, it.x2 - it.x1), hl = 18 * (1 + (k - 1) * .6), len = Math.hypot(it.x2 - it.x1, it.y2 - it.y1);

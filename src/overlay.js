@@ -52,8 +52,8 @@ api.on('sel:reset', () => {
 api.on('sel:clear', () => { sel = null; draw(); });
 
 // ---------- chế độ chụp ảnh ----------
-const COLORS = [['#FF0000', 'Đỏ'], ['#F2B84B', 'Vàng'], ['#2EB872', 'Xanh lá'], ['#3D9BFF', 'Xanh dương'], ['#FFFFFF', 'Trắng'], ['#111111', 'Đen']];
-const TOOL_KEYS = { a: 'arrow', r: 'rect', t: 'text', p: 'pen', h: 'hl', b: 'blur' };
+const COLORS = [['#FF0000', 'Đỏ'], ['#111111', 'Đen']];
+const TOOL_KEYS = { a: 'arrow', l: 'line', r: 'rect', t: 'text', p: 'pen', b: 'blur' };
 const SIZE_NAMES = ['Nét mảnh', 'Nét dày', 'Nét rất dày'];
 let shotReady = false, SHOT_HINT = '';
 function setupShot() {
@@ -182,7 +182,8 @@ function draw() {
   tag.textContent = `${phys(sel.w)} × ${phys(sel.h)}`;
   tag.style.display = 'block';
   tag.style.left = sel.x + 'px';
-  tag.style.top = (sel.y > 30 ? sel.y - 28 : sel.y + 6) + 'px';
+  tag.style.left = sel.x + 6 + 'px';
+  tag.style.top = sel.y + 6 + 'px';   // nhãn kích thước nằm trong góc khung (phía trên là thanh nút)
   if (!drag) placeBar(); else bar.style.display = 'none';
 }
 
@@ -190,9 +191,9 @@ function placeBar() {
   bar.style.display = 'flex';
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
   let x = Math.min(Math.max(4, sel.x), innerWidth - bw - 4);
-  let y = sel.y + sel.h + 10;
-  if (y + bh > innerHeight - 4) y = sel.y - bh - 36;
-  if (y < 4) y = sel.y + sel.h - bh - 10;
+  let y = sel.y - bh - 10;                                   // thanh nút nằm phía trên khung
+  if (y < 4) y = sel.y + sel.h + 10;                         // sát mép trên: xuống dưới khung
+  if (y + bh > innerHeight - 4) y = sel.y + 8;               // khung gần kín màn: vào trong, sát mép trên
   bar.style.left = x + 'px'; bar.style.top = y + 'px';
 }
 
