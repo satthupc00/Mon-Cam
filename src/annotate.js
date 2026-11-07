@@ -142,11 +142,17 @@ const Ann = {
     this.commitText();
     const s = this.sel(), img = this.img;
     const kx = img.naturalWidth / innerWidth, ky = img.naturalHeight / innerHeight;
-    const W = Math.max(1, Math.round(s.w * kx)), H = Math.max(1, Math.round(s.h * ky));
+    // Căn vùng cắt vào đúng lưới pixel thật (màn Scale 125%/150%: 1 điểm = 1,25/1,5 pixel) và chép nguyên pixel,
+    // không nội suy — nếu không chữ sẽ bị nhoè
+    const sx = Math.max(0, Math.round(s.x * kx)), sy = Math.max(0, Math.round(s.y * ky));
+    const W = Math.max(1, Math.min(img.naturalWidth - sx, Math.round(s.w * kx)));
+    const H = Math.max(1, Math.min(img.naturalHeight - sy, Math.round(s.h * ky)));
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d');
-    g.drawImage(img, s.x * kx, s.y * ky, s.w * kx, s.h * ky, 0, 0, W, H);
-    g.setTransform(kx, 0, 0, ky, -s.x * kx, -s.y * ky);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(img, sx, sy, W, H, 0, 0, W, H);
+    g.imageSmoothingEnabled = true;
+    g.setTransform(kx, 0, 0, ky, -sx, -sy);
     this.render(g, this.items);
     return { url: c.toDataURL('image/png'), w: W, h: H };
   },

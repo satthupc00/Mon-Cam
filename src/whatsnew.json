@@ -1,12 +1,9 @@
 {
-  "version": "2.0.1",
-  "date": "2026-11-05",
-  "new": [
-    "Chụp ảnh: thêm công cụ vẽ đường thẳng (phím L, giữ Shift để thẳng ngang/dọc/chéo)"
-  ],
-  "improved": [
-    "Chụp ảnh: bỏ bút tô sáng; ô màu chỉ còn đỏ, đen và ô chọn màu tự do",
-    "Thanh nút của khung chụp / khung quay nằm phía trên khung; nhãn kích thước vào trong góc khung"
-  ],
-  "fixed": []
+  "version": "2.0.2",
+  "date": "2026-11-07",
+  "new": [],
+  "improved": [],
+  "fixed": [
+    "Ảnh chụp bị mờ, chữ nhoè trên màn hình đặt Scale 125% / 150%: giờ ảnh giữ nguyên từng pixel, sắc nét như trên màn hình"
+  ]
 }
