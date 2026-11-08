@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { Recorder, BT709 } = require('./lib/recorder');
-const { run, probe, ffmpegPath } = require('./lib/ff');
+const { run, probe, ffmpegPath, ffEnv } = require('./lib/ff');
 const { joinFiles, muxSegment } = require('./lib/compose');
 const winlist = require('./lib/winlist');
 const { renderSegments, makeGif, cleanSegs } = require('./lib/segments');
@@ -26,7 +26,7 @@ const DEFAULTS = {
   outDir: path.join(app.getPath('videos'), 'Mon Cam'),
   shotDir: path.join(app.getPath('pictures'), 'Mon Cam'),
   closeToTray: true, launchAtLogin: false, trayTipShown: false,
-  rememberShot: true, lastShot: null, rememberRegion: true,
+  rememberShot: true, lastShot: null, rememberRegion: true, hdrCapture: true,
   gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
@@ -138,7 +138,7 @@ function grabDisplay(d) {
       '-offset_x', String(Math.round(r.x)), '-offset_y', String(Math.round(r.y)),
       '-video_size', `${Math.round(r.width)}x${Math.round(r.height)}`, '-i', 'desktop',
       '-frames:v', '1', '-c:v', 'png', '-compression_level', '1', '-f', 'image2pipe', '-'];
-    const p = spawn(ffmpegPath(), args, { windowsHide: true });
+    const p = spawn(ffmpegPath(), args, { windowsHide: true, env: ffEnv });
     const chunks = [];
     const t = setTimeout(() => { try { p.kill(); } catch {} }, 5000);
     p.stdout.on('data', c => chunks.push(c));
@@ -203,14 +203,13 @@ async function startSelection(opts = {}) {
   if (rec || selecting) return;
   selecting = true;
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
-  // Chụp ảnh: giữ nguyên cửa sổ Mon Cam (người dùng tự né); chọn vùng quay thì ẩn đi
-  if (win && !opts.shot) { win.hide(); await new Promise(r => setTimeout(r, 200)); }
+  // Giữ nguyên cửa sổ Mon Cam khi chọn vùng (chụp lẫn quay) để người dùng thấy và tự dời ra khỏi vùng
   const displays = screen.getAllDisplays();
   const maxW = Math.max(...displays.map(d => Math.round(d.size.width * d.scaleFactor)));
   const maxH = Math.max(...displays.map(d => Math.round(d.size.height * d.scaleFactor)));
   // Windows: chụp nền bằng ffmpeg gdigrab (cùng cách với lúc quay) để màn hình HDR không bị cháy trắng
   let grabs = [];
-  if (isWin) grabs = await Promise.all(displays.map(d => grabDisplay(d).catch(() => null)));
+  if (isWin && settings.hdrCapture !== false) grabs = await Promise.all(displays.map(d => grabDisplay(d).catch(() => null)));
   let sources = [];
   if (!grabs.length || grabs.some(g => !g)) {
     try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: maxW, height: maxH } }); } catch {}
@@ -453,14 +452,16 @@ async function stopRecording() {
   const cur = rec;
   clearInterval(cur.timer);
   stopClickFx(); closeFloats();
-  showMain();
-  send('busy', { text: 'Đang lưu bản quay…' });
   const tmpDir = path.join(dirs.tmp, cur.id);
   try {
     const wasRec = cur.r.state === 'recording';
+    // Dừng ghi hình HẲN rồi mới hiện cửa sổ app — nếu hiện trước, vài khung cuối sẽ dính giao diện app
+    const vStop = cur.r.stop();
     if (cur.audio && wasRec) await audioSegStop(cur);
     if (cur.audio) audioCall('close');
-    const segs = await cur.r.stop();
+    const segs = await vStop;
+    showMain();
+    send('busy', { text: 'Đang lưu bản quay…' });
     rec = null;
     send('rec:state', { state: 'idle' });
     fs.mkdirSync(settings.outDir, { recursive: true });

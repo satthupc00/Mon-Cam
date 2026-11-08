@@ -124,6 +124,13 @@ const total = () => segs.reduce((m, g) => Math.max(m, segEnd(g)), 0);
 const keptLen = () => segs.reduce((t, g) => t + segLen(g), 0);
 const segAt = t => segs.find(g => t >= g.t - 1e-6 && t < segEnd(g) - 1e-6) || null;
 const pos = () => P;
+// Khoảng trống ở đầu timeline (vd. sau khi xoá đoạn đầu) → tự cắt bỏ, dồn các đoạn về sát đầu.
+// (Cuối timeline không bao giờ có khoảng trống vì độ dài = mép cuối của đoạn xa nhất.)
+function cropLead() {
+  if (!segs.length) return;
+  const m = Math.min(...segs.map(g => g.t));
+  if (m > 1e-3) { segs.forEach(g => { g.t -= m; }); P = Math.max(0, P - m); }
+}
 function pushHist() { hist.push(JSON.stringify({ segs, selId })); if (hist.length > 100) hist.shift(); }
 function undo() {
   const h = hist.pop(); if (!h) return;
@@ -322,8 +329,9 @@ function deleteSel() {
   if (i < 0) return;
   if (segs.length < 2) { toast('Phải còn ít nhất 1 đoạn'); return; }
   pushHist();
-  segs.splice(i, 1);                 // để lại khoảng trống, không tự dồn
+  segs.splice(i, 1);                 // khoảng trống ở giữa được giữ lại; ở đầu thì tự cắt
   selId = null;
+  cropLead();
   renderSegs(false);
   seekTo(Math.min(P, total()));
 }
@@ -393,7 +401,7 @@ tl.addEventListener('pointerup', () => {
   const a = act; act = null;
   if (!a) return;
   tl.classList.remove('panning');
-  if (a.type === 'trim') { a.el.classList.remove('trimming'); showSnap(null); renderSegs(true); seekTo(P); }
+  if (a.type === 'trim') { a.el.classList.remove('trimming'); showSnap(null); cropLead(); renderSegs(true); seekTo(P); }
   else if (a.type === 'press') { selId = a.g.id; stopPlay(); seekTo(a.t); renderSegs(false); }
   else if (a.type === 'move') endMove(a, false);
 });
@@ -461,6 +469,7 @@ function endMove(a, cancel) {
   a.el.classList.remove('lift', 'bad');
   if (cancel || a.spot == null) a.g.t = a.orig; else a.g.t = a.spot;
   if (Math.abs(a.g.t - a.orig) < 1e-6) hist.pop();      // không đổi gì: không tính là 1 bước
+  cropLead();
   renderSegs(false);   // bay vào đúng chỗ
   a.el.classList.add('pop'); setTimeout(() => a.el.classList.remove('pop'), 300);
   seekTo(P);

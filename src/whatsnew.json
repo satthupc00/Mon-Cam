@@ -1,10 +1,15 @@
 {
-  "version": "2.1.0",
+  "version": "2.1.1",
   "date": "2026-11-08",
   "new": [
-    "Kéo thả 1 video từ ngoài (MP4, WebM, MOV, GIF) vào cửa sổ Mon Cam để mở trong màn Xem lại & cắt: cắt đoạn, ghi chú, xuất MP4/GIF như video vừa quay",
-    "Bản lưu ra nằm trong thư mục video của Mon Cam, file gốc giữ nguyên (trừ khi bật Ghi đè file gốc)"
+    "Cài đặt → Chụp ảnh: công tắc Chụp kiểu tương thích HDR (nếu ảnh vẫn mờ thì thử tắt)"
   ],
-  "improved": [],
-  "fixed": []
+  "improved": [
+    "Chọn vùng quay (Ctrl+PrtSc) không còn ẩn cửa sổ Mon Cam, để bạn thấy và dời nó ra khỏi vùng quay",
+    "Màn Xem lại & cắt: khoảng trống ở đầu timeline (vd. sau khi xoá đoạn đầu) được tự cắt bỏ"
+  ],
+  "fixed": [
+    "Clip bị dư một đoạn có giao diện Mon Cam ở cuối: giờ dừng ghi hình xong hẳn rồi app mới hiện lên",
+    "Ảnh chụp / video bị mờ trên màn Scale 125% / 150%: ffmpeg giờ chụp đúng độ phân giải thật"
+  ]
 }
