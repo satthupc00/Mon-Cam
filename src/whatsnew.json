@@ -1,15 +1,12 @@
 {
-  "version": "2.1.1",
+  "version": "2.1.2",
   "date": "2026-11-08",
-  "new": [
-    "Cài đặt → Chụp ảnh: công tắc Chụp kiểu tương thích HDR (nếu ảnh vẫn mờ thì thử tắt)"
-  ],
+  "new": [],
   "improved": [
-    "Chọn vùng quay (Ctrl+PrtSc) không còn ẩn cửa sổ Mon Cam, để bạn thấy và dời nó ra khỏi vùng quay",
-    "Màn Xem lại & cắt: khoảng trống ở đầu timeline (vd. sau khi xoá đoạn đầu) được tự cắt bỏ"
+    "Chụp ảnh mặc định dùng kiểu chụp thường: luôn lấy đúng độ phân giải thật nên ảnh nét ở mọi mức Scale",
+    "Chụp kiểu tương thích HDR giờ mặc định tắt; chỉ bật khi màn hình HDR làm ảnh bị cháy sáng (chụp ở độ phân giải gốc, chậm hơn một chút)"
   ],
   "fixed": [
-    "Clip bị dư một đoạn có giao diện Mon Cam ở cuối: giờ dừng ghi hình xong hẳn rồi app mới hiện lên",
-    "Ảnh chụp / video bị mờ trên màn Scale 125% / 150%: ffmpeg giờ chụp đúng độ phân giải thật"
+    "Ảnh chụp bị mờ do chế độ HDR bật sẵn"
   ]
 }

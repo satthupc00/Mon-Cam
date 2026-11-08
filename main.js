@@ -26,11 +26,13 @@ const DEFAULTS = {
   outDir: path.join(app.getPath('videos'), 'Mon Cam'),
   shotDir: path.join(app.getPath('pictures'), 'Mon Cam'),
   closeToTray: true, launchAtLogin: false, trayTipShown: false,
-  rememberShot: true, lastShot: null, rememberRegion: true, hdrCapture: true,
+  rememberShot: true, lastShot: null, rememberRegion: true, hdrCapture: false,
   gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
 try { settings = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(settingsFile, 'utf8')) }; } catch {}
+// Bản 2.1.1 để "Chụp kiểu tương thích HDR" mặc định bật → chuyển về tắt 1 lần (chụp kiểu thường luôn nét)
+if (settings.hdrCaptureV !== 2) { settings.hdrCapture = false; settings.hdrCaptureV = 2; }
 function saveSettings() {
   try { fs.mkdirSync(userDir, { recursive: true }); fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2)); } catch {}
 }
@@ -207,7 +209,8 @@ async function startSelection(opts = {}) {
   const displays = screen.getAllDisplays();
   const maxW = Math.max(...displays.map(d => Math.round(d.size.width * d.scaleFactor)));
   const maxH = Math.max(...displays.map(d => Math.round(d.size.height * d.scaleFactor)));
-  // Windows: chụp nền bằng ffmpeg gdigrab (cùng cách với lúc quay) để màn hình HDR không bị cháy trắng
+  // Mặc định chụp bằng Chromium (đúng độ phân giải thật, nét ở mọi Scale).
+  // Bật "tương thích HDR": chụp bằng ffmpeg gdigrab ở độ phân giải gốc (chậm hơn chút) để màn HDR không bị cháy trắng
   let grabs = [];
   if (isWin && settings.hdrCapture !== false) grabs = await Promise.all(displays.map(d => grabDisplay(d).catch(() => null)));
   let sources = [];
