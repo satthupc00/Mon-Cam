@@ -1,9 +1,10 @@
 {
-  "version": "2.0.2",
-  "date": "2026-11-07",
-  "new": [],
+  "version": "2.1.0",
+  "date": "2026-11-08",
+  "new": [
+    "Kéo thả 1 video từ ngoài (MP4, WebM, MOV, GIF) vào cửa sổ Mon Cam để mở trong màn Xem lại & cắt: cắt đoạn, ghi chú, xuất MP4/GIF như video vừa quay",
+    "Bản lưu ra nằm trong thư mục video của Mon Cam, file gốc giữ nguyên (trừ khi bật Ghi đè file gốc)"
+  ],
   "improved": [],
-  "fixed": [
-    "Ảnh chụp bị mờ, chữ nhoè trên màn hình đặt Scale 125% / 150%: giờ ảnh giữ nguyên từng pixel, sắc nét như trên màn hình"
-  ]
+  "fixed": []
 }

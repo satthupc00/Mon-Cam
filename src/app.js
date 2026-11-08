@@ -724,6 +724,37 @@ api.on('audio:cmd', async ({ cmd, id }) => {
   } catch (e) { reply(id, { ok: false, error: String(e) }); }
 });
 
+// ---------- kéo thả video từ ngoài vào để chỉnh ----------
+const DROP_EXT = /\.(mp4|m4v|webm|mov|gif)$/i;
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+addEventListener('dragenter', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  if (++dragDepth === 1) $('dropzone').hidden = false;
+});
+addEventListener('dragover', e => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+addEventListener('dragleave', e => {
+  if (!hasFiles(e)) return;
+  if (--dragDepth <= 0) { dragDepth = 0; $('dropzone').hidden = true; }
+});
+addEventListener('drop', e => {
+  e.preventDefault();
+  dragDepth = 0; $('dropzone').hidden = true;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  if (!DROP_EXT.test(f.name)) { toast('Chỉ mở được video MP4, WebM, MOV hoặc GIF', 'error'); return; }
+  const p = api.pathForFile ? api.pathForFile(f) : '';
+  if (!p) { toast('Không đọc được đường dẫn file này', 'error'); return; }
+  if (recState.state !== 'idle') { toast('Đang quay, hãy dừng quay trước khi mở video khác'); return; }
+  openDropped(p);
+});
+function openDropped(p) {
+  [...document.querySelectorAll('.scrim')].forEach(s => { if (!s.hidden) hideScrim(s); });
+  stopPlay && stopPlay();
+  openEditor(p);
+}
+
 // ---------- phím tắt trong app ----------
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;

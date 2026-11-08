@@ -83,6 +83,7 @@ function createMain() {
   });
   win.on('closed', () => { win = null; });
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  win.webContents.on('will-navigate', e => e.preventDefault());   // thả file lỡ ra ngoài vùng xử lý: không để trang bị thay
 }
 function setLayout(mode) {
   if (!win || !SIZES[mode] || mode === layout) return;

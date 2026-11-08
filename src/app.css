@@ -328,3 +328,11 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .lastbtn{margin-top:4px;height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .lastbtn svg{width:15px;height:15px}
 .lastbtn:not(:disabled):hover{color:var(--text);border-color:var(--red);transform:translateY(-1px)}
+
+/* ===== kéo thả video vào để chỉnh ===== */
+.dropzone{position:fixed;inset:66px 12px 12px;z-index:80;border:2px dashed var(--red);border-radius:12px;background:rgba(229,56,59,.08);
+  display:grid;place-items:center;pointer-events:none;animation:fade .15s ease}
+.dz-in{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(31,33,38,.92);border:1px solid var(--line);border-radius:12px;padding:18px 26px}
+.dz-in b{font-size:16px}
+.dz-in small{color:var(--muted)}
+.dz-ic{color:var(--red)}.dz-ic svg{width:30px;height:30px}
