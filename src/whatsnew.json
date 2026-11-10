@@ -1,12 +1,13 @@
 {
-  "version": "2.1.2",
-  "date": "2026-11-08",
-  "new": [],
-  "improved": [
-    "Chụp ảnh mặc định dùng kiểu chụp thường: luôn lấy đúng độ phân giải thật nên ảnh nét ở mọi mức Scale",
-    "Chụp kiểu tương thích HDR giờ mặc định tắt; chỉ bật khi màn hình HDR làm ảnh bị cháy sáng (chụp ở độ phân giải gốc, chậm hơn một chút)"
+  "version": "2.2.0",
+  "date": "2026-11-10",
+  "new": [
+    "Chụp ảnh: thanh công cụ dựng dọc bên phải khung chọn (hết chỗ thì sang trái)"
   ],
-  "fixed": [
-    "Ảnh chụp bị mờ do chế độ HDR bật sẵn"
-  ]
+  "improved": [
+    "Độ dày nét gom vào 1 nút, bấm xổ ngang 3 nấc (phím 1 · 2 · 3 vẫn dùng được)",
+    "Chỉ còn 1 ô chọn màu tự do, tự nhớ màu lần trước",
+    "Bỏ nút Hoàn tác, Huỷ và Copy: dùng Ctrl+Z, Esc và Enter; nút Lưu thu gọn thành icon (Ctrl+S)"
+  ],
+  "fixed": []
 }

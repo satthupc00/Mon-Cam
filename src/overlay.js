@@ -52,7 +52,6 @@ api.on('sel:reset', () => {
 api.on('sel:clear', () => { sel = null; draw(); });
 
 // ---------- chế độ chụp ảnh ----------
-const COLORS = [['#FF0000', 'Đỏ'], ['#111111', 'Đen']];
 const TOOL_KEYS = { a: 'arrow', l: 'line', r: 'rect', t: 'text', p: 'pen', b: 'blur' };
 const SIZE_NAMES = ['Nét mảnh', 'Nét dày', 'Nét rất dày'];
 let shotReady = false, SHOT_HINT = '';
@@ -62,44 +61,42 @@ function setupShot() {
   Ann.img = img;
   if (shotReady) { $('hint').innerHTML = SHOT_HINT; return; }
   shotReady = true;
-  $('hint').innerHTML = SHOT_HINT = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · Bấm 1 lần = cả màn hình · <kbd>Enter</kbd> copy · <kbd>Ctrl+S</kbd> lưu + copy · <kbd>Esc</kbd> huỷ';
-  const sw = $('swatches');
-  COLORS.forEach(([c, n], i) => {
-    const b = document.createElement('button');
-    b.className = 'swatch' + (i ? '' : ' on'); b.style.background = c; b.title = n;
-    b.onclick = () => pickColor(c, b);
-    sw.appendChild(b);
-  });
-  // ô chọn màu tự do
-  const cb = document.createElement('label');
-  cb.className = 'swatch custom'; cb.title = 'Chọn màu khác';
-  cb.innerHTML = '<input type="color" value="#FF00FF">';
-  const inp = cb.querySelector('input');
-  inp.oninput = () => { cb.style.setProperty('--c', inp.value); pickColor(inp.value, cb); };
-  inp.onclick = () => pickColor(inp.value, cb);
-  sw.appendChild(cb);
-  // 3 nấc độ dày nét
+  $('hint').innerHTML = SHOT_HINT = '<span class="cam">Chụp ảnh</span> · Kéo để chọn vùng · <kbd>Enter</kbd> copy · <kbd>Ctrl+S</kbd> lưu · <kbd>Ctrl+Z</kbd> hoàn tác · <kbd>Esc</kbd> huỷ';
+  // 1 ô màu tự do, nhớ màu lần trước
+  let saved = '#FF0000';
+  try { saved = localStorage.getItem('shotColor') || saved; } catch {}
+  $('colorInp').value = saved; setColor(saved);
+  $('colorInp').oninput = () => setColor($('colorInp').value);
+  // độ dày nét: 1 nút, bấm xổ ngang 3 nấc
   const sz = $('sizes');
   SIZE_NAMES.forEach((n, i) => {
     const b = document.createElement('button');
-    b.className = 'sizebtn' + (i ? '' : ' on'); b.title = `${n} (${i + 1})`; b.dataset.s = i;
+    b.className = 'sizebtn'; b.title = `${n} (${i + 1})`; b.dataset.s = i;
     b.innerHTML = `<i style="width:${[4, 8, 13][i]}px;height:${[4, 8, 13][i]}px"></i>`;
-    b.onclick = () => setSize(i);
+    b.onclick = () => { setSize(i); sz.hidden = true; };
     sz.appendChild(b);
   });
+  $('sizeBtn').onclick = e => {
+    e.stopPropagation();
+    sz.hidden = !sz.hidden;
+    // thanh nằm bên trái khung thì xổ sang trái cho khỏi đè lên vùng chọn
+    sz.classList.toggle('left', bar.getBoundingClientRect().left < (sel ? sel.x : 0));
+  };
+  addEventListener('pointerdown', e => { if (!e.target.closest('.szwrap')) sz.hidden = true; }, true);
+  setSize(0);
   bar.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(Ann.tool === b.dataset.tool ? null : b.dataset.tool));
-  $('undo').onclick = () => Ann.undo();
-  $('shotCancel').onclick = () => api.send('sel:cancel');
-  $('copyBtn').onclick = () => doShot(false);
   $('saveBtn').onclick = () => doShot(true);
   Ann.init(img, () => sel, () => {});
 }
-function pickColor(c, el) {
+function setColor(c) {
   Ann.color = c;
-  $('swatches').querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === el));
+  $('colorBtn').style.setProperty('--c', c);
   if (Ann.textEl) Ann.textEl.style.color = c;
+  try { localStorage.setItem('shotColor', c); } catch {}
 }
 function setSize(i) {
+  const d = [4, 8, 13][i], dot = document.querySelector('#sizeBtn .dot');
+  if (dot) { dot.style.width = d + 'px'; dot.style.height = d + 'px'; }
   Ann.size = i;
   $('sizes').querySelectorAll('.sizebtn').forEach(b => b.classList.toggle('on', +b.dataset.s === i));
 }
@@ -190,6 +187,14 @@ function draw() {
 function placeBar() {
   bar.style.display = 'flex';
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
+  if (cfg.shot) {   // chụp ảnh: thanh dọc bên phải khung; hết chỗ thì sang trái, rồi vào trong
+    let x = sel.x + sel.w + 10;
+    if (x + bw > innerWidth - 4) x = sel.x - bw - 10;
+    if (x < 4) x = sel.x + sel.w - bw - 8;
+    const y = Math.min(Math.max(4, sel.y), innerHeight - bh - 4);
+    bar.style.left = x + 'px'; bar.style.top = y + 'px';
+    return;
+  }
   let x = Math.min(Math.max(4, sel.x), innerWidth - bw - 4);
   let y = sel.y - bh - 10;                                   // thanh nút nằm phía trên khung
   if (y < 4) y = sel.y + sel.h + 10;                         // sát mép trên: xuống dưới khung
