@@ -178,9 +178,14 @@ function draw() {
   Object.assign(selEl.style, { display: 'block', left: sel.x - 1 + 'px', top: sel.y - 1 + 'px', width: sel.w + 2 + 'px', height: sel.h + 2 + 'px' });
   tag.textContent = `${phys(sel.w)} × ${phys(sel.h)}`;
   tag.style.display = 'block';
-  tag.style.left = sel.x + 'px';
-  tag.style.left = sel.x + 6 + 'px';
-  tag.style.top = sel.y + 6 + 'px';   // nhãn kích thước nằm trong góc khung (phía trên là thanh nút)
+  // nhãn kích thước nằm NGOÀI khung: chụp ảnh → phía trên (thanh nút ở bên phải); quay → phía dưới (thanh nút ở trên).
+  // Không đủ chỗ thì sang phía còn lại, cuối cùng mới vào trong góc khung
+  const th = tag.offsetHeight || 22, tw = tag.offsetWidth || 90, gap = 6;
+  const above = sel.y - th - gap, below = sel.y + sel.h + gap;
+  const fitA = above >= 2, fitB = below + th <= innerHeight - 2;
+  let ty = cfg.shot ? (fitA ? above : fitB ? below : sel.y + gap) : (fitB ? below : fitA ? above : sel.y + gap);
+  tag.style.left = Math.min(Math.max(2, sel.x), innerWidth - tw - 2) + 'px';
+  tag.style.top = ty + 'px';
   if (!drag) placeBar(); else bar.style.display = 'none';
 }
 

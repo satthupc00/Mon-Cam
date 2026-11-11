@@ -39,6 +39,7 @@ function renderSettings() {
   document.querySelectorAll('input.sw[data-key]').forEach(c => { c.checked = !!S[c.dataset.key]; });
   const gif = S.format === 'gif';
   $('gifHint').hidden = !gif;
+  $('keysOpt').hidden = !S.showKeys;
   $('audioRow').classList.toggle('disabled', gif);
   $('outDir').textContent = S.outDir;
   $('outDir').title = S.outDir;

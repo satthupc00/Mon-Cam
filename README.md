@@ -6,6 +6,7 @@ App quay màn hình cho Windows (giống Bandicam), by Mondiro.
 - Quay theo vùng kéo chọn (rê chuột lên cửa sổ để bắt dính, bấm 1 cái để chọn; bấm chỗ trống = toàn màn hình)
 - Xuất MP4 15/30/60 fps hoặc GIF
 - Bật/tắt con trỏ chuột, hiệu ứng click, âm thanh máy (trong Cài đặt)
+- Hiện phím bấm & click chuột ở 1 góc vùng quay (Cài đặt › Quay phim, mặc định tắt) — lưu ý mật khẩu gõ khi đang quay cũng sẽ hiện
 - Tạm dừng / tiếp tục khi đang quay
 - Xem lại ngay: cắt thành nhiều đoạn, xoá đoạn (để lại khoảng trống = hình đen), kéo đoạn tự hít vào mép, lăn chuột phóng to timeline, chuột phải kéo để di chuyển; lưu MP4 hoặc xuất GIF
 - Ghi chú lên video (mũi tên, khung, chữ, bút, tô sáng), in luôn khi lưu

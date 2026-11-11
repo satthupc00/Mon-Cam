@@ -27,6 +27,7 @@ const DEFAULTS = {
   shotDir: path.join(app.getPath('pictures'), 'Mon Cam'),
   closeToTray: true, launchAtLogin: false, trayTipShown: false,
   rememberShot: true, lastShot: null, rememberRegion: true, hdrCapture: false,
+  showKeys: false, keysCorner: 'bl',
   gifFps: 15, gifScale: 75, lastRegion: null, homeBounds: null, edBounds: null,
 };
 let settings = { ...DEFAULTS };
@@ -296,7 +297,7 @@ async function startSelection(opts = {}) {
 }
 
 // ---------- Cửa sổ phụ khi quay ----------
-let frameWin = null, barWin = null, fxWin = null;
+let frameWin = null, barWin = null, fxWin = null, kcWin = null;
 function makeFloat(bounds, file, opts = {}) {
   const w = new BrowserWindow({
     ...bounds, frame: false, transparent: true, resizable: false, skipTaskbar: true, alwaysOnTop: true,
@@ -306,13 +307,13 @@ function makeFloat(bounds, file, opts = {}) {
   w.setAlwaysOnTop(true, 'screen-saver');
   if (opts.protect !== false) w.setContentProtection(true); // không lọt vào video
   if (opts.clickThrough) w.setIgnoreMouseEvents(true);
-  w.loadFile(page(file));
+  w.loadFile(page(file), opts.query ? { query: opts.query } : undefined);
   w.once('ready-to-show', () => w.showInactive());
   return w;
 }
 function closeFloats() {
-  [frameWin, barWin, fxWin].forEach(w => { if (w && !w.isDestroyed()) w.destroy(); });
-  frameWin = barWin = fxWin = null;
+  [frameWin, barWin, fxWin, kcWin].forEach(w => { if (w && !w.isDestroyed()) w.destroy(); });
+  frameWin = barWin = fxWin = kcWin = null;
 }
 
 function placeBar(dip) {
@@ -369,6 +370,7 @@ async function beginRecording(sel) {
     frameWin = makeFloat({ x: sel.dip.x - m, y: sel.dip.y - m, width: sel.dip.width + m * 2, height: sel.dip.height + m * 2 }, 'frame.html', { clickThrough: true });
   }
   if (settings.clickFx && sel.dip) startClickFx(sel.dip);
+  if (settings.showKeys && sel.dip) startKeyCast(sel.dip);
 
   if (settings.countdown) {
     const d = sel.dip || screen.getPrimaryDisplay().bounds;
@@ -433,7 +435,7 @@ async function abortRec() {
   if (!rec) return;
   const cur = rec; rec = null;
   clearInterval(cur.timer);
-  stopClickFx(); closeFloats();
+  stopClickFx(); stopKeyCast(); closeFloats();
   if (cur.audio) audioCall('cancel');
   await cur.r.cancel();
   cur.aSegs.forEach(a => { if (a.file) try { fs.rmSync(a.file, { force: true }); } catch {} });
@@ -454,7 +456,7 @@ async function stopRecording() {
   if (!rec || rec.r.state === 'stopping') return;
   const cur = rec;
   clearInterval(cur.timer);
-  stopClickFx(); closeFloats();
+  stopClickFx(); stopKeyCast(); closeFloats();
   const tmpDir = path.join(dirs.tmp, cur.id);
   try {
     const wasRec = cur.r.state === 'recording';
@@ -505,29 +507,55 @@ async function stopRecording() {
 function notify(text, kind) { send('toast', { text, kind }); }
 function shortErr(e) { return String(e && e.message || e).split('\n').filter(Boolean).slice(-1)[0].slice(0, 160); }
 
-// ---------- Hiệu ứng click (tuỳ chọn) ----------
-// Bắt chuột toàn hệ thống bằng uiohook, chỉ bật trong lúc quay có bật hiệu ứng click
-let hook = null, fxDip = null, hookOn = false, keepHook = false, fxListen = false;
-function startClickFx(dip) {
-  try {
-    if (!hook) hook = require('uiohook-napi');
-    if (!fxListen) {
-      fxListen = true;
-      hook.uIOhook.on('mousedown', ev => {
-        if (!fxDip || !fxWin || fxWin.isDestroyed()) return;
+// ---------- Hiệu ứng click + hiện phím bấm (tuỳ chọn) ----------
+// Bắt chuột / phím toàn hệ thống bằng uiohook, chỉ bật trong lúc quay có bật tính năng
+let hook = null, fxDip = null, kcDip = null, hookOn = false, keepHook = false, listening = false;
+function useHook() {
+  if (!hook) hook = require('uiohook-napi');
+  if (!listening) {
+    listening = true;
+    const { label } = require('./lib/keycast');
+    hook.uIOhook.on('mousedown', ev => {
+      if (fxDip && fxWin && !fxWin.isDestroyed()) {
         const p = isWin ? screen.screenToDipPoint({ x: ev.x, y: ev.y }) : { x: ev.x, y: ev.y };
         fxWin.webContents.send('fx:click', { x: p.x - fxDip.x, y: p.y - fxDip.y, right: ev.button === 2 });
-      });
-    }
-    if (!hookOn) { hook.uIOhook.start(); hookOn = true; }
-  } catch { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
+      }
+      if (kcDip && kcWin && !kcWin.isDestroyed() && rec && rec.r.state === 'recording') {
+        const b = ev.button === 2 ? 'Chuột phải' : ev.button === 3 ? 'Chuột giữa' : 'Chuột trái';
+        const mods = [ev.ctrlKey && 'Ctrl', ev.altKey && 'Alt', ev.shiftKey && 'Shift'].filter(Boolean);
+        kcWin.webContents.send('kc:key', { type: 'mouse', text: [...mods, b].join(' + ') });
+      }
+    });
+    hook.uIOhook.on('keydown', ev => {
+      if (!kcDip || !kcWin || kcWin.isDestroyed() || !rec || rec.r.state !== 'recording') return;
+      const k = label(ev, hook.UiohookKey);
+      if (k) kcWin.webContents.send('kc:key', k);
+    });
+  }
+  if (!hookOn) { hook.uIOhook.start(); hookOn = true; }
+}
+function releaseHook() {
+  if (hook && hookOn && !keepHook && !fxDip && !kcDip) { try { hook.uIOhook.stop(); } catch {} hookOn = false; }
+}
+function startClickFx(dip) {
+  try { useHook(); } catch { notify('Máy này chưa hỗ trợ hiệu ứng click'); return; }
   fxDip = dip;
   fxWin = makeFloat({ x: dip.x, y: dip.y, width: dip.width, height: dip.height }, 'clickfx.html', { clickThrough: true, protect: false });
 }
-function stopClickFx() {
-  fxDip = null;
-  if (hook && hookOn && !keepHook) { try { hook.uIOhook.stop(); } catch {} hookOn = false; }
+function stopClickFx() { fxDip = null; releaseHook(); }
+
+// Ô hiện phím nằm ở 1 góc BÊN TRONG vùng quay (để lọt vào video), xuyên chuột
+function startKeyCast(dip) {
+  try { useHook(); } catch { notify('Máy này chưa hỗ trợ hiện phím bấm'); return; }
+  const m = 16, W = Math.min(460, dip.width - m * 2), H = Math.min(150, dip.height - m * 2);
+  if (W < 120 || H < 40) return;   // vùng quá nhỏ
+  const c = settings.keysCorner || 'bl';
+  const x = c[1] === 'l' ? dip.x + m : dip.x + dip.width - m - W;
+  const y = c[0] === 't' ? dip.y + m : dip.y + dip.height - m - H;
+  kcDip = dip;
+  kcWin = makeFloat({ x, y, width: W, height: H }, 'keycast.html', { clickThrough: true, protect: false, query: { c } });
 }
+function stopKeyCast() { kcDip = null; releaseHook(); }
 
 // ---------- Khung chờ quay ----------
 // Cửa sổ trong suốt phủ màn hình: tối 50% quanh vùng chọn + khung đỏ + thanh nút.
@@ -850,5 +878,5 @@ app.whenReady().then(() => {
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
 });
-app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); winlist.stop(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); stopKeyCast(); winlist.stop(); });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });

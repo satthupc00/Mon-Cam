@@ -1,13 +1,11 @@
 {
-  "version": "2.2.0",
-  "date": "2026-11-10",
+  "version": "2.3.0",
+  "date": "2026-11-11",
   "new": [
-    "Chụp ảnh: thanh công cụ dựng dọc bên phải khung chọn (hết chỗ thì sang trái)"
+    "Hiện phím bấm & click chuột ngay trên video (vd \"Ctrl + S\", \"Chuột trái\", chữ đang gõ) — bật trong Cài đặt › Quay phim › Ghi kèm, chọn góc hiện. Mặc định tắt"
   ],
   "improved": [
-    "Độ dày nét gom vào 1 nút, bấm xổ ngang 3 nấc (phím 1 · 2 · 3 vẫn dùng được)",
-    "Chỉ còn 1 ô chọn màu tự do, tự nhớ màu lần trước",
-    "Bỏ nút Hoàn tác, Huỷ và Copy: dùng Ctrl+Z, Esc và Enter; nút Lưu thu gọn thành icon (Ctrl+S)"
+    "Chụp ảnh: nhãn kích thước khi kéo khung nằm ngoài khung chọn, không che nội dung"
   ],
   "fixed": []
 }

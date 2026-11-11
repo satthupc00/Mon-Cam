@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Phím bấm</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
+#list{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:6px;padding:4px}
+body.t #list{justify-content:flex-start;flex-direction:column-reverse}
+body.r #list{align-items:flex-end}
+.k{max-width:100%;box-sizing:border-box;padding:7px 14px;border-radius:10px;background:rgba(20,20,24,.82);color:#fff;
+  font-size:20px;font-weight:600;line-height:1.25;white-space:pre;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);
+  animation:in .14s ease-out;transition:opacity .35s, transform .35s}
+.k.mouse{background:rgba(242,184,75,.92);color:#1a1408;border-color:transparent}
+.k.out{opacity:0;transform:translateY(6px)}
+.k b{display:inline-block;animation:pop .18s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(1.25)}to{transform:none}}
+</style></head>
+<body>
+<div id="list"></div>
+<script>
+const c = new URLSearchParams(location.search).get('c') || 'bl';
+document.body.classList.add(c[0], c[1]);
+const list = document.getElementById('list');
+const MAX = 3, LIFE = 2200;
+let last = null, lastKind = null, lastText = '', count = 1;
+
+function life(el) {
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); if (el === last) last = null; }, 360); }, LIFE);
+}
+function add(text, kind) {
+  const el = document.createElement('div');
+  el.className = 'k' + (kind === 'mouse' ? ' mouse' : '');
+  el.textContent = text;
+  list.appendChild(el);
+  while (list.children.length > MAX) list.firstElementChild.remove();
+  last = el; lastKind = kind; lastText = text; count = 1;
+  life(el);
+}
+api.on('kc:key', k => {
+  const alive = last && last.isConnected && !last.classList.contains('out');
+  if (k.type === 'char') {
+    // gõ liên tục → nối vào cùng 1 ô (giữ ~28 ký tự cuối)
+    if (alive && lastKind === 'char') {
+      lastText = (lastText + k.ch).slice(-28);
+      last.textContent = lastText;
+      life(last);
+    } else add(k.ch, 'char');
+    return;
+  }
+  // bấm lặp lại cùng phím tắt / click → hiện "×2, ×3…"
+  if (alive && lastKind === k.type && last.dataset.base === k.text) {
+    count++; last.textContent = k.text + '  ×' + count; life(last);
+    return;
+  }
+  add(k.text, k.type);
+  last.dataset.base = k.text;
+});
+</script>
+</body></html>
