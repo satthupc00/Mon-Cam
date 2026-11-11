@@ -1,11 +1,13 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "date": "2026-11-11",
-  "new": [
-    "Hiện phím bấm & click chuột ngay trên video (vd \"Ctrl + S\", \"Chuột trái\", chữ đang gõ) — bật trong Cài đặt › Quay phim › Ghi kèm, chọn góc hiện. Mặc định tắt"
-  ],
+  "new": [],
   "improved": [
-    "Chụp ảnh: nhãn kích thước khi kéo khung nằm ngoài khung chọn, không che nội dung"
+    "Chọn khung quay: nhãn kích thước nằm ngoài khung (phía dưới, hoặc cạnh thanh nút khi khung gần kín màn)"
   ],
-  "fixed": []
+  "fixed": [
+    "Ảnh chụp thỉnh thoảng bị mờ sau khi đổi màn hình / Scale / máy ngủ dậy: app tự kiểm tra đủ pixel, thiếu thì tự chụp lại bằng cách khác, và làm mới cửa sổ chọn vùng — không cần cài lại app",
+    "Máy nhiều màn khác độ phân giải: màn nhỏ không còn bị phóng to làm mờ ảnh",
+    "Chặn Ctrl + lăn chuột vô tình phóng to màn chọn vùng"
+  ]
 }

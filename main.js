@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, desktopCapturer, globalShortcut, shell, session, dialog, clipboard, nativeImage, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, desktopCapturer, powerMonitor, globalShortcut, shell, session, dialog, clipboard, nativeImage, Tray, Menu } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -155,6 +155,42 @@ function grabDisplay(d) {
   });
 }
 
+// Kích thước pixel thật của 1 màn (Windows: hỏi thẳng hệ điều hành, không tin scaleFactor có thể đã cũ)
+function physSize(d) {
+  if (isWin) { try { const r = screen.dipToScreenRect(null, d.bounds); return { w: Math.round(r.width), h: Math.round(r.height) }; } catch {} }
+  return { w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor) };
+}
+// Chụp nền cho từng màn bằng Chromium, xin ĐÚNG kích thước của màn đó (mỗi cỡ màn hỏi riêng, để màn nhỏ
+// không bị phóng to theo màn lớn). Ảnh nhận về nhỏ hơn kích thước thật → coi là hỏng (sẽ bị mờ) → trả null.
+async function grabChromium(displays) {
+  const out = displays.map(() => null), log = [];
+  const groups = new Map();
+  displays.forEach((d, i) => { const p = physSize(d), k = p.w + 'x' + p.h; if (!groups.has(k)) groups.set(k, { p, idx: [] }); groups.get(k).idx.push(i); });
+  for (const { p, idx } of groups.values()) {
+    let src = [];
+    try { src = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: p.w, height: p.h } }); } catch {}
+    for (const i of idx) {
+      const d = displays[i];
+      const m = src.find(x => String(x.display_id) === String(d.id)) || (displays.length === 1 ? src[0] : null);
+      if (!m) { log.push(`${d.id}: không có nguồn`); continue; }
+      const z = m.thumbnail.getSize();
+      log.push(`${d.id}: cần ${p.w}x${p.h} scale ${d.scaleFactor} · nhận ${z.width}x${z.height}`);
+      if (z.width < p.w - 2 || z.height < p.h - 2) continue;   // thiếu pixel → sẽ mờ
+      out[i] = m.thumbnail.toDataURL();
+    }
+  }
+  return { out, log };
+}
+// Nhật ký ngắn mỗi lần chụp (để tìm nguyên nhân khi ảnh bị mờ): %APPDATA%/Mon Cam/shot-log.txt, giữ 60 dòng
+function shotLog(lines) {
+  try {
+    const f = path.join(userDir, 'shot-log.txt');
+    let old = []; try { old = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean); } catch {}
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    fs.writeFileSync(f, [...old, ...lines.map(l => now + '  ' + l)].slice(-60).join('\n') + '\n');
+  } catch {}
+}
+
 // ---------- Chọn vùng ----------
 // Vùng đã chọn lần trước (nếu nằm trên màn này) để hiện sẵn khi chọn vùng mới
 function lastRectOn(d, region = settings.lastRegion) {
@@ -183,6 +219,8 @@ function overlayFor(d) {
   o.setOpacity(0);
   o.setIgnoreMouseEvents(true);
   o.loadFile(page('overlay.html'));
+  o.webContents.on('did-finish-load', () => { o.webContents.setZoomFactor(1); o.webContents.setVisualZoomLevelLimits(1, 1).catch(() => {}); });
+  o.webContents.on('zoom-changed', () => o.webContents.setZoomFactor(1));   // Ctrl+lăn chuột không được phóng ảnh
   o._ready = new Promise(r => o.webContents.once('did-finish-load', r));
   o.once('ready-to-show', () => o.showInactive());
   o.on('closed', () => { if (pool.get(d.id) === o) pool.delete(d.id); });
@@ -196,6 +234,14 @@ function parkOverlay(o) {
   o.setIgnoreMouseEvents(true);
   o.setBounds({ x: OFF, y: OFF, width: o.getBounds().width, height: o.getBounds().height });
 }
+// Cửa sổ chọn vùng để sẵn lâu ngày có thể giữ thông số màn hình cũ (đổi Scale, cắm/rút màn, ngủ dậy, Remote Desktop)
+// → bỏ hết và tạo mới, giống như mở lại app
+function renewOverlays() {
+  if (selecting) return setTimeout(renewOverlays, 2000);
+  for (const [id, o] of pool) { if (!o.isDestroyed()) o.destroy(); pool.delete(id); }
+  setTimeout(warmOverlays, 800);
+}
+function onMetrics(e, d, changed) { if (!changed || changed.some(c => c !== 'workArea')) renewOverlays(); }
 function warmOverlays() {
   const ids = new Set(screen.getAllDisplays().map(d => d.id));
   for (const [id, o] of pool) if (!ids.has(id)) { if (!o.isDestroyed()) o.destroy(); pool.delete(id); }
@@ -208,16 +254,32 @@ async function startSelection(opts = {}) {
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
   // Giữ nguyên cửa sổ Mon Cam khi chọn vùng (chụp lẫn quay) để người dùng thấy và tự dời ra khỏi vùng
   const displays = screen.getAllDisplays();
-  const maxW = Math.max(...displays.map(d => Math.round(d.size.width * d.scaleFactor)));
-  const maxH = Math.max(...displays.map(d => Math.round(d.size.height * d.scaleFactor)));
-  // Mặc định chụp bằng Chromium (đúng độ phân giải thật, nét ở mọi Scale).
-  // Bật "tương thích HDR": chụp bằng ffmpeg gdigrab ở độ phân giải gốc (chậm hơn chút) để màn HDR không bị cháy trắng
-  let grabs = [];
-  if (isWin && settings.hdrCapture !== false) grabs = await Promise.all(displays.map(d => grabDisplay(d).catch(() => null)));
-  let sources = [];
-  if (!grabs.length || grabs.some(g => !g)) {
-    try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: maxW, height: maxH } }); } catch {}
+  // Mặc định chụp bằng Chromium (đúng độ phân giải thật, nét ở mọi Scale). Ảnh Chromium trả về thiếu pixel
+  // (hay gặp sau khi đổi màn / Scale / ngủ dậy) → tự chụp lại màn đó bằng ffmpeg ở độ phân giải gốc.
+  // Bật "tương thích HDR": luôn chụp bằng ffmpeg để màn HDR không bị cháy trắng
+  let grabs = displays.map(() => null), log = [];
+  if (isWin && settings.hdrCapture === true) {
+    grabs = await Promise.all(displays.map(d => grabDisplay(d).catch(() => null)));
+    log.push('HDR: ffmpeg ' + grabs.map(g => g ? 'ok' : 'lỗi').join(','));
   }
+  if (grabs.some(g => !g)) {
+    const c = await grabChromium(displays);
+    log.push(...c.log);
+    grabs = grabs.map((g, i) => g || c.out[i]);
+    if (isWin) {
+      const miss = grabs.map((g, i) => g ? -1 : i).filter(i => i >= 0);
+      for (const i of miss) {
+        grabs[i] = await grabDisplay(displays[i]).catch(() => null);
+        log.push(`${displays[i].id}: ảnh Chromium thiếu pixel → chụp lại bằng ffmpeg: ${grabs[i] ? 'ok' : 'lỗi'}`);
+      }
+    }
+    if (grabs.some(g => !g)) {   // đường cùng: dùng ảnh Chromium dù nhỏ còn hơn không có
+      let src = [];
+      try { src = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 7680, height: 4320 } }); } catch {}
+      grabs = grabs.map((g, i) => g || ((src.find(x => String(x.display_id) === String(displays[i].id)) || src[i] || {}).thumbnail || { toDataURL: () => null }).toDataURL());
+    }
+  }
+  if (opts.shot) shotLog(log);
   const cursorId = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id;
   // Chọn vùng quay: lấy khung các cửa sổ đang mở để rê chuột là bắt dính (gửi sau, không chờ)
   const winsP = !opts.shot && isWin ? winlist.listWindows().catch(() => []) : Promise.resolve([]);
@@ -266,7 +328,6 @@ async function startSelection(opts = {}) {
     overlays = displays.map((d, i) => {
       const o = overlayFor(d);
       o._display = d;
-      const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
       o._ready.then(() => winsP.then(list => {
         if (o.isDestroyed() || !selecting || !list.length) return;
         const b = d.bounds, rects = [];
@@ -284,7 +345,7 @@ async function startSelection(opts = {}) {
         if (!o.isVisible()) o.showInactive();
         o.webContents.send('sel:init', {
           displayId: d.id, scale: d.scaleFactor, w: d.bounds.width, h: d.bounds.height,
-          img: grabs[i] || (src ? src.thumbnail.toDataURL() : null), shot: !!opts.shot,
+          img: grabs[i] || null, shot: !!opts.shot,
           cursor: settings.cursor, audio: settings.audio, gif: settings.format === 'gif',
           primary: d.id === screen.getPrimaryDisplay().id,
           cursorHere: d.id === cursorId,
@@ -873,7 +934,8 @@ app.whenReady().then(() => {
   createTray();
   if (isWin) setTimeout(() => winlist.warm(), 2500);   // tiến trình hỏi danh sách cửa sổ chạy sẵn
   setTimeout(warmOverlays, 1500);
-  screen.on('display-added', warmOverlays); screen.on('display-removed', warmOverlays); screen.on('display-metrics-changed', warmOverlays);
+  screen.on('display-added', renewOverlays); screen.on('display-removed', renewOverlays); screen.on('display-metrics-changed', onMetrics);
+  ['resume', 'unlock-screen'].forEach(ev => { try { powerMonitor.on(ev, renewOverlays); } catch {} });
   applyLoginItem();
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);

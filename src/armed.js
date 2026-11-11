@@ -25,14 +25,23 @@ function draw() {
   Object.assign(rt.style, { left: x + w + 'px', top: y + 'px', width: Math.max(0, W - x - w) + 'px', height: h + 'px' });
   Object.assign(selEl.style, { left: x - 1 + 'px', top: y - 1 + 'px', width: w + 2 + 'px', height: h + 2 + 'px' });
   tag.innerHTML = icon('region') + `${phys(w)} × ${phys(h)}`;
-  tag.style.left = x + 'px';
-  tag.style.left = x + 6 + 'px';
-  tag.style.top = y + 6 + 'px';   // nhãn kích thước nằm trong góc khung
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
   let bx = Math.min(Math.max(4, x), W - bw - 4), by = y - bh - 10;   // thanh nút phía trên khung
   if (by < 4) by = y + h + 10;
   if (by + bh > H - 4) by = y + 40;
   bar.style.left = bx + 'px'; bar.style.top = by + 'px';
+  // nhãn kích thước nằm NGOÀI khung, phía dưới (thanh nút ở trên); chỗ đó bị thanh nút chiếm hoặc hết màn → lên trên / vào trong
+  const th = tag.offsetHeight || 22, tw = tag.offsetWidth || 110, gap = 6;
+  const below = y + h + gap, above = y - th - gap;
+  const barBelow = by > y + h - 1;
+  const barOut = by + bh <= y || by >= y + h;          // thanh nút nằm ngoài khung
+  let ty, tx = Math.min(Math.max(2, x), W - tw - 2);
+  if (below + th <= H - 2 && !barBelow) ty = below;
+  else if (barOut && bx + bw + 8 + tw <= W - 2) { ty = by + (bh - th) / 2; tx = bx + bw + 8; }   // cùng hàng, cạnh thanh nút
+  else if (above >= 2 && by > y - 1) ty = above;
+  else ty = y + gap;
+  tag.style.left = tx + 'px';
+  tag.style.top = ty + 'px';
 }
 addEventListener('resize', draw);
 
