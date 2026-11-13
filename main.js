@@ -301,6 +301,11 @@ async function startSelection(opts = {}) {
     });
     ipcMain.on('sel:cancel', () => done(null));
     ipcMain.on('shot:done', (e, r) => {
+      try {
+        const o = overlays.find(x => !x.isDestroyed() && x.webContents === e.sender);
+        const g = r.diag || {}, b = o ? o.getBounds() : {};
+        shotLog([`→ xuất ảnh màn ${r.displayId}: cửa sổ ${b.width}x${b.height} (trang ${g.win}) dpr ${g.dpr} zoom ${o ? o.webContents.getZoomFactor() : '?'} · ảnh nền ${g.img} · vùng ${g.sel} → cắt ${g.crop} · ra ${r.w}x${r.h}`]);
+      } catch {}
       // nhớ vùng chụp (nếu bật trong Cài đặt) để lần sau hiện sẵn
       const d = displays.find(x => x.id === r.displayId);
       if (settings.rememberShot && d && r.rect) {

@@ -20,6 +20,8 @@ api.on('sel:init', async c => {
     img = new Image(); img.src = c.img;
     shot.src = c.img;
     try { await img.decode(); await shot.decode(); } catch {}
+    // Ảnh nền vẽ theo đúng kích thước màn (không co giãn theo cửa sổ): cửa sổ lệch 1-2 điểm cũng không làm nhoè ảnh
+    shot.style.width = c.w + 'px'; shot.style.height = c.h + 'px';
   }
   if (c.last) {
     sel = norm({ x: c.last.x, y: c.last.y, w: c.last.w, h: c.last.h });
@@ -87,6 +89,7 @@ function setupShot() {
   bar.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(Ann.tool === b.dataset.tool ? null : b.dataset.tool));
   $('saveBtn').onclick = () => doShot(true);
   Ann.init(img, () => sel, () => {});
+  Ann.base = () => [cfg.w, cfg.h];
 }
 function setColor(c) {
   Ann.color = c;
@@ -111,7 +114,7 @@ function setTool(t) {
 function doShot(save) {
   if (!sel || sel.w < 2 || sel.h < 2 || !img) return;
   const r = Ann.export();
-  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true,
+  api.send('shot:done', { url: r.url, w: r.w, h: r.h, displayId: cfg.displayId, save: save === true, diag: Ann.diag,
     rect: { x: Math.round(sel.x), y: Math.round(sel.y), w: Math.round(sel.w), h: Math.round(sel.h) } });
 }
 
@@ -289,7 +292,7 @@ function showLoupe(x, y, on) {
   loupe.style.display = 'block';
   const lx = x + 140 > innerWidth ? x - 140 : x + 20, ly = y + 150 > innerHeight ? y - 150 : y + 20;
   loupe.style.left = lx + 'px'; loupe.style.top = ly + 'px';
-  const sx = img.naturalWidth / innerWidth, sy = img.naturalHeight / innerHeight, z = 8, n = 120 / z;
+  const sx = img.naturalWidth / cfg.w, sy = img.naturalHeight / cfg.h, z = 8, n = 120 / z;
   lc.imageSmoothingEnabled = false;
   lc.fillStyle = '#000'; lc.fillRect(0, 0, 120, 120);
   lc.drawImage(img, x * sx - n / 2, y * sy - n / 2, n, n, 0, 0, 120, 120);

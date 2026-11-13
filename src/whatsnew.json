@@ -1,13 +1,11 @@
 {
-  "version": "2.3.1",
-  "date": "2026-11-11",
+  "version": "2.3.2",
+  "date": "2026-11-13",
   "new": [],
   "improved": [
-    "Chọn khung quay: nhãn kích thước nằm ngoài khung (phía dưới, hoặc cạnh thanh nút khi khung gần kín màn)"
+    "Nhật ký chụp (shot-log.txt) ghi thêm chi tiết bước cắt ảnh để dễ tìm lỗi"
   ],
   "fixed": [
-    "Ảnh chụp thỉnh thoảng bị mờ sau khi đổi màn hình / Scale / máy ngủ dậy: app tự kiểm tra đủ pixel, thiếu thì tự chụp lại bằng cách khác, và làm mới cửa sổ chọn vùng — không cần cài lại app",
-    "Máy nhiều màn khác độ phân giải: màn nhỏ không còn bị phóng to làm mờ ảnh",
-    "Chặn Ctrl + lăn chuột vô tình phóng to màn chọn vùng"
+    "Màn chọn vùng chụp không còn co giãn ảnh nền khi cửa sổ lệch kích thước màn hình 1-2 điểm (gây nhoè chữ khi đang chọn, toạ độ cắt lệch nhẹ)"
   ]
 }

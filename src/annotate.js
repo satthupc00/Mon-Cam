@@ -5,6 +5,7 @@ const Ann = {
   K: [1, 2, 3.3],          // độ dày nét theo 3 nấc: mảnh / dày / rất dày
   TS: [22, 32, 46],        // cỡ chữ theo 3 nấc
   canvas: null, ctx: null, sel: () => null, onChange: () => {},
+  base: () => [innerWidth, innerHeight],   // kích thước màn (điểm) mà ảnh nền phủ kín
 
   init(img, getSel, onChange, canvas) {
     this.img = img; this.sel = getSel; this.onChange = onChange || (() => {});
@@ -100,7 +101,7 @@ const Ann = {
     g.restore();
   },
   render(g, list) {
-    const kx = this.img ? this.img.naturalWidth / innerWidth : 1, ky = this.img ? this.img.naturalHeight / innerHeight : 1;
+    const [bw, bh] = this.base(), kx = this.img ? this.img.naturalWidth / bw : 1, ky = this.img ? this.img.naturalHeight / bh : 1;
     for (const it of list) {
       g.save();
       g.strokeStyle = g.fillStyle = it.c; g.lineCap = 'round'; g.lineJoin = 'round';
@@ -141,7 +142,7 @@ const Ann = {
   export() {
     this.commitText();
     const s = this.sel(), img = this.img;
-    const kx = img.naturalWidth / innerWidth, ky = img.naturalHeight / innerHeight;
+    const [bw, bh] = this.base(), kx = img.naturalWidth / bw, ky = img.naturalHeight / bh;
     // Căn vùng cắt vào đúng lưới pixel thật (màn Scale 125%/150%: 1 điểm = 1,25/1,5 pixel) và chép nguyên pixel,
     // không nội suy — nếu không chữ sẽ bị nhoè
     const sx = Math.max(0, Math.round(s.x * kx)), sy = Math.max(0, Math.round(s.y * ky));
@@ -154,6 +155,7 @@ const Ann = {
     g.imageSmoothingEnabled = true;
     g.setTransform(kx, 0, 0, ky, -sx, -sy);
     this.render(g, this.items);
+    this.diag = { win: [innerWidth, innerHeight], dpr: devicePixelRatio, img: [img.naturalWidth, img.naturalHeight], crop: [sx, sy, W, H], sel: [s.x, s.y, s.w, s.h].map(v => +v.toFixed(2)) };
     return { url: c.toDataURL('image/png'), w: W, h: H };
   },
 };
