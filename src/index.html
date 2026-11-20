@@ -54,6 +54,15 @@
         <span class="div"></span>
         <button class="tool" id="vUndo" title="Hoàn tác ghi chú" data-i="undo"></button>
         <button class="tool" id="vClear" title="Xoá hết ghi chú" data-i="trash"></button>
+        <span class="div"></span>
+        <button class="cropbtn" id="cropBtn" title="Crop: cắt bớt khung hình (C)"><span data-i="crop"></span>Crop<em id="cropSz"></em></button>
+        <div class="cropbar" id="cropBar" hidden>
+          <span class="cb-lab">Tỉ lệ</span>
+          <div class="cratio" id="cRatio"><button data-r="0" class="on">Tự do</button><button data-r="1.7778">16:9</button><button data-r="0.5625">9:16</button><button data-r="1">1:1</button><button data-r="1.3333">4:3</button></div>
+          <span class="div"></span>
+          <button class="btn" id="cropClear" title="Bỏ crop, giữ nguyên khung hình gốc" data-i="reset">Bỏ crop</button>
+          <button class="btn pri" id="cropDone" title="Xong (Enter)" data-i="check">Xong</button>
+        </div>
         <span class="nb-hint" id="vHint">Ghi chú hiện suốt cả video · bấm Lưu MP4 / Xuất GIF là in luôn lên video</span>
       </div>
       <div class="player" id="player">
@@ -182,6 +191,15 @@
 <div class="toasts" id="toasts"></div>
 
 <canvas id="vann"></canvas>
+<div id="cropLayer" hidden>
+  <div class="cclip"><div class="chole" id="cHole"></div></div>
+  <div class="cbox" id="cBox">
+    <i class="ch" data-h="nw"></i><i class="ch" data-h="n"></i><i class="ch" data-h="ne"></i><i class="ch" data-h="e"></i>
+    <i class="ch" data-h="se"></i><i class="ch" data-h="s"></i><i class="ch" data-h="sw"></i><i class="ch" data-h="w"></i>
+    <b class="cgrid"></b>
+  </div>
+  <div class="ctag" id="cTag"></div>
+</div>
 <script src="icons.js"></script>
 <script src="annotate.js"></script>
 <script src="app.js"></script>

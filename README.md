@@ -9,6 +9,7 @@ App quay màn hình cho Windows (giống Bandicam), by Mondiro.
 - Hiện phím bấm & click chuột ở 1 góc vùng quay (Cài đặt › Quay phim, mặc định tắt) — lưu ý mật khẩu gõ khi đang quay cũng sẽ hiện
 - Tạm dừng / tiếp tục khi đang quay
 - Xem lại ngay: cắt thành nhiều đoạn, xoá đoạn (để lại khoảng trống = hình đen), kéo đoạn tự hít vào mép, lăn chuột phóng to timeline, chuột phải kéo để di chuyển; lưu MP4 hoặc xuất GIF
+- Crop video (phím C): kéo khung cắt bớt khung hình, khoá tỉ lệ 16:9 · 9:16 · 1:1 · 4:3
 - Ghi chú lên video (mũi tên, khung, chữ, bút, tô sáng), in luôn khi lưu
 - Kéo thả video bên ngoài (MP4/WebM/MOV/GIF) vào cửa sổ để chỉnh
 - Chụp ảnh màn hình (PrtSc) kèm vẽ ghi chú, copy thẳng để dán
@@ -25,6 +26,7 @@ Vào mục **Releases** của repo, tải `MonCam-Setup-x.y.z.exe` và chạy.
 | PrtSc (hoặc Ctrl+Shift+S) | Chụp ảnh: A mũi tên · L đường thẳng · R khung · T chữ · P bút · B làm mờ · 1 2 3 độ dày nét · Ctrl+Z hoàn tác · Enter/Ctrl+C copy · Ctrl+S lưu + copy |
 | Space · S · Del · Ctrl+Z · ← → | Trong màn Xem lại: phát/dừng, cắt tại vạch đỏ, xoá đoạn, hoàn tác, lùi/tới từng khung |
 | A · R · T · P · H · 1 2 3 | Trong màn Xem lại: chọn công cụ ghi chú (mũi tên, khung, chữ, bút, tô sáng), độ dày nét |
+| C · Enter · Esc | Trong màn Xem lại: bật/tắt Crop, xong |
 
 ## Phát hành bản mới
 Tăng `version` trong `package.json` và cập nhật `src/whatsnew.json`, rồi push. GitHub Actions sẽ tự build và tạo Release.

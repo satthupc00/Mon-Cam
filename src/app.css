@@ -339,3 +339,39 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4);box-shadow:0
 .dz-in b{font-size:16px}
 .dz-in small{color:var(--muted)}
 .dz-ic{color:var(--red)}.dz-ic svg{width:30px;height:30px}
+
+/* ---------- Crop video ---------- */
+.notebar .cropbtn{height:30px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);display:inline-flex;align-items:center;gap:6px;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:inherit;font-size:12.5px}
+.notebar .cropbtn svg{width:15px;height:15px}
+.notebar .cropbtn:hover{border-color:var(--red);transform:translateY(-1px)}
+.notebar .cropbtn.on{background:var(--selected-bg);border-color:var(--red);color:#fff}
+.notebar .cropbtn.set{border-color:var(--red)}
+.notebar .cropbtn em{font-style:normal;color:var(--warn);font-size:11px;font-variant-numeric:tabular-nums}
+.notebar .cropbtn em:empty{display:none}
+#cropLayer{position:fixed;z-index:5;pointer-events:none}
+#cropLayer .cclip{position:absolute;inset:0;overflow:hidden;border-radius:4px;pointer-events:none}
+#cropLayer .chole{position:absolute;box-shadow:0 0 0 9999px rgba(0,0,0,.62)}
+#cropLayer .cbox{position:absolute;outline:1px solid rgba(255,255,255,.85);pointer-events:none}
+#cropLayer.edit .cbox{pointer-events:auto;cursor:move;outline:2px solid var(--red)}
+#cropLayer .ch{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;background:#fff;border:2px solid var(--red);border-radius:2px;display:none;box-sizing:border-box}
+#cropLayer.edit .ch{display:block}
+.ch[data-h=nw]{left:0;top:0;cursor:nwse-resize}.ch[data-h=n]{left:50%;top:0;cursor:ns-resize}.ch[data-h=ne]{left:100%;top:0;cursor:nesw-resize}
+.ch[data-h=e]{left:100%;top:50%;cursor:ew-resize}.ch[data-h=se]{left:100%;top:100%;cursor:nwse-resize}.ch[data-h=s]{left:50%;top:100%;cursor:ns-resize}
+.ch[data-h=sw]{left:0;top:100%;cursor:nesw-resize}.ch[data-h=w]{left:0;top:50%;cursor:ew-resize}
+#cropLayer .cgrid{position:absolute;inset:0;display:none;pointer-events:none;
+  background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+             linear-gradient(transparent calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+#cropLayer.edit .cgrid{display:block}
+#cropLayer .ctag{position:absolute;background:var(--red);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:5px;font-variant-numeric:tabular-nums;white-space:nowrap;display:none}
+#cropLayer.edit .ctag{display:block}
+.cropbar{display:flex;align-items:center;gap:6px;flex:0 0 auto;animation:pop .22s var(--ease-spring)}
+.cropbar[hidden]{display:none}
+.notebar.cropping > :not(#cropBtn):not(#cropBar){display:none}
+.cropbar .cb-lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:0 2px 0 4px}
+.cropbar .div{width:1px;align-self:stretch;background:var(--line);margin:2px 2px}
+.cropbar .btn{height:28px;padding:0 10px;font-size:12.5px}
+.cratio{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px;gap:2px}
+.cratio button{height:24px;padding:0 9px;border:0;border-radius:4px;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;font-variant-numeric:tabular-nums}
+.cratio button:hover{color:var(--text)}
+.cratio button.on{background:var(--selected-bg);color:#fff;box-shadow:inset 0 0 0 1px var(--red)}
+#cropLayer.edit{pointer-events:auto;cursor:crosshair}

@@ -112,7 +112,7 @@ function showView(v) {
   $('backBtn').hidden = v !== 'editor';
   $('openDir').hidden = v === 'editor';
   api.invoke('win:layout', v).catch(() => {});
-  if (v === 'home') { stopPlay(); vid.removeAttribute('src'); vid.load(); cur = null; resetNotes(); loadRecent(); }
+  if (v === 'home') { stopPlay(); vid.removeAttribute('src'); vid.load(); cur = null; resetNotes(); resetCrop(); loadRecent(); }
   refreshFoot();
 }
 $('backBtn').onclick = () => showView('home');
@@ -150,7 +150,7 @@ async function openEditor(file) {
   $('mp4Grp').hidden = isImg; $('gifGrp').hidden = isImg;
   if (isImg) $('gifImg').src = info.url; else { vid.src = info.url; vid.load(); }
   segs = [newSeg(0, info.duration || 0, 0)]; selId = null; hist = []; P = 0; playing = false; renderPlay();
-  requestAnimationFrame(resetNotes);
+  requestAnimationFrame(resetNotes); resetCrop();
   $('iName').textContent = info.name; $('iName').title = info.name;
   $('iSize').textContent = info.width ? `${info.width} × ${info.height}` : '—';
   $('iFps').textContent = info.fps || '—';
@@ -512,6 +512,7 @@ function renderNoteHint() {
 }
 function setNoteTool(t) {
   VAnn.commitText();
+  if (t && cropEdit) setCropEdit(false);
   VAnn.tool = t;
   document.querySelectorAll('[data-vtool]').forEach(b => b.classList.toggle('on', b.dataset.vtool === t));
   $('player').classList.toggle('drawing', !!t);
@@ -572,6 +573,114 @@ function notesPng() {
   return c.toDataURL('image/png');
 }
 
+// ---------- CROP: cắt bớt khung hình ----------
+// Lưu theo tỉ lệ 0..1 của khung video (không phụ thuộc cỡ hiển thị). Khi xuất: đổi ra pixel chẵn → ffmpeg crop
+let crop = null, cropEdit = false, cropRatio = 0, cDrag = null;
+const cropLayer = $('cropLayer'), cBox = $('cBox'), cTag = $('cTag'), cropBar = $('cropBar');
+function cropPx(c = crop) {                    // khung crop theo pixel video, kích thước chẵn
+  if (!c || !cur || !cur.width) return null;
+  const W = cur.width, H = cur.height;
+  let w = Math.max(16, Math.round(c.w * W / 2) * 2), h = Math.max(16, Math.round(c.h * H / 2) * 2);
+  w = Math.min(w, W - W % 2); h = Math.min(h, H - H % 2);
+  let x = Math.min(Math.max(0, Math.round(c.x * W / 2) * 2), W - w), y = Math.min(Math.max(0, Math.round(c.y * H / 2) * 2), H - h);
+  return { x, y, w, h };
+}
+function isFullCrop(c) { return !c || (c.x < .001 && c.y < .001 && c.w > .999 && c.h > .999); }
+function renderCrop() {
+  const r = vidRect(), show = !!cur && !cur.isGif && (cropEdit || !!crop) && r && !$('vwrap').hidden && !$('editor').hidden;
+  cropLayer.hidden = !show; cropBar.hidden = !(show && cropEdit);
+  $('notebar').classList.toggle('cropping', !cropBar.hidden);
+  cropLayer.classList.toggle('edit', cropEdit);
+  $('cropBtn').classList.toggle('on', cropEdit); $('cropBtn').classList.toggle('set', !!crop && !cropEdit);
+  const px = cropPx(crop || { x: 0, y: 0, w: 1, h: 1 });
+  $('cropSz').textContent = crop && px ? `${px.w}×${px.h}` : '';
+  if (cur && cur.width) $('iSize').textContent = `${cur.width} × ${cur.height}` + (crop && px ? ` → ${px.w} × ${px.h}` : '');
+  if (!show) return;
+  Object.assign(cropLayer.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  const c = crop || { x: 0, y: 0, w: 1, h: 1 };
+  const geo = { left: c.x * r.w + 'px', top: c.y * r.h + 'px', width: c.w * r.w + 'px', height: c.h * r.h + 'px' };
+  Object.assign(cBox.style, geo); Object.assign($('cHole').style, geo);
+  if (cropEdit) {
+    cTag.textContent = `${px.w} × ${px.h}`;
+    // nhãn kích thước nằm ngoài khung crop: dưới → trên → trong
+    const th = cTag.offsetHeight || 22, by = (c.y + c.h) * r.h + 6, ay = c.y * r.h - th - 6;
+    cTag.style.left = Math.min(Math.max(2, c.x * r.w), r.w - (cTag.offsetWidth || 80) - 2) + 'px';
+    cTag.style.top = (by + th <= r.h - 2 ? by : ay >= 2 ? ay : c.y * r.h + 6) + 'px';
+  }
+}
+function setCropEdit(on) {
+  if (!cur || cur.isGif) return;
+  if (on) { setNoteTool(null); stopPlay(); if (!crop) crop = { x: 0, y: 0, w: 1, h: 1 }; }
+  else if (isFullCrop(crop)) crop = null;
+  cropEdit = on;
+  renderCrop();
+}
+function setCropRatio(rt) {
+  cropRatio = rt;
+  cropRatio && cur && cur.width && fitRatio();
+  $('cRatio').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.r === rt));
+  renderCrop();
+}
+// ép khung về tỉ lệ đang chọn (giữ tâm, lớn nhất có thể trong khung cũ)
+function fitRatio() {
+  const W = cur.width, H = cur.height, c = crop || { x: 0, y: 0, w: 1, h: 1 };
+  let pw = c.w * W, ph = c.h * H;
+  if (pw / ph > cropRatio) pw = ph * cropRatio; else ph = pw / cropRatio;
+  const cx = (c.x + c.w / 2) * W, cy = (c.y + c.h / 2) * H;
+  let x = Math.min(Math.max(0, cx - pw / 2), W - pw), y = Math.min(Math.max(0, cy - ph / 2), H - ph);
+  crop = { x: x / W, y: y / H, w: pw / W, h: ph / H };
+}
+cBox.addEventListener('pointerdown', e => {
+  if (!cropEdit || e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const h = e.target.dataset.h || 'move';
+  cDrag = { h, sx: e.clientX, sy: e.clientY, o: { ...crop }, r: vidRect() };
+  cBox.setPointerCapture(e.pointerId);
+});
+cBox.addEventListener('pointermove', e => {
+  if (!cDrag) return;
+  const { h, o, r } = cDrag, dx = (e.clientX - cDrag.sx) / r.w, dy = (e.clientY - cDrag.sy) / r.h;
+  const minW = 32 / cur.width, minH = 32 / cur.height;
+  if (h === 'move') { crop = { ...o, x: Math.min(Math.max(0, o.x + dx), 1 - o.w), y: Math.min(Math.max(0, o.y + dy), 1 - o.h) }; return renderCrop(); }
+  let x1 = o.x, y1 = o.y, x2 = o.x + o.w, y2 = o.y + o.h;
+  if (h.includes('w')) x1 = Math.min(Math.max(0, x1 + dx), x2 - minW);
+  if (h.includes('e')) x2 = Math.max(Math.min(1, x2 + dx), x1 + minW);
+  if (h.includes('n')) y1 = Math.min(Math.max(0, y1 + dy), y2 - minH);
+  if (h.includes('s')) y2 = Math.max(Math.min(1, y2 + dy), y1 + minH);
+  if (cropRatio) {   // giữ tỉ lệ: lấy cạnh đang kéo làm chuẩn, cạnh kia chạy theo (neo ở góc / cạnh đối diện)
+    const A = cropRatio * cur.height / cur.width;   // tỉ lệ w/h tính theo đơn vị 0..1
+    let w = x2 - x1, hh = y2 - y1;
+    if (h === 'n' || h === 's') w = hh * A; else if (h === 'e' || h === 'w') hh = w / A;
+    else if (w / hh > A) w = hh * A; else hh = w / A;
+    const ax = h.includes('w') ? x2 : h.includes('e') ? x1 : (o.x + o.w / 2), ay = h.includes('n') ? y2 : h.includes('s') ? y1 : (o.y + o.h / 2);
+    const lim = Math.min(1, h.includes('w') ? ax / w : h.includes('e') ? (1 - ax) / w : Math.min(ax, 1 - ax) * 2 / w,
+                         h.includes('n') ? ay / hh : h.includes('s') ? (1 - ay) / hh : Math.min(ay, 1 - ay) * 2 / hh);
+    w *= lim; hh *= lim;
+    x1 = h.includes('w') ? ax - w : h.includes('e') ? ax : ax - w / 2;
+    y1 = h.includes('n') ? ay - hh : h.includes('s') ? ay : ay - hh / 2;
+    x2 = x1 + w; y2 = y1 + hh;
+  }
+  crop = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+  renderCrop();
+});
+cBox.addEventListener('pointerup', () => { cDrag = null; });
+// kéo ở vùng tối bên ngoài khung → vẽ khung crop mới từ chỗ bấm
+cropLayer.addEventListener('pointerdown', e => {
+  if (!cropEdit || e.button !== 0 || e.target !== cropLayer) return;
+  e.preventDefault();
+  const r = vidRect(), x = (e.clientX - r.x) / r.w, y = (e.clientY - r.y) / r.h;
+  crop = { x, y, w: 0, h: 0 };
+  cDrag = { h: 'se', sx: e.clientX, sy: e.clientY, o: { ...crop }, r };
+  cBox.setPointerCapture(e.pointerId);
+});
+$('cropBtn').onclick = () => setCropEdit(!cropEdit);
+$('cropDone').onclick = () => setCropEdit(false);
+$('cropClear').onclick = () => { crop = null; setCropRatio(0); setCropEdit(false); };
+$('cRatio').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setCropRatio(+b.dataset.r); });
+new ResizeObserver(() => renderCrop()).observe(vid);
+addEventListener('resize', () => requestAnimationFrame(renderCrop));
+function resetCrop() { crop = null; cropEdit = false; cDrag = null; setCropRatio(0); }
+
 // GIF
 function chipGroup(id, key) {
   const g = $(id);
@@ -591,7 +700,7 @@ $('saveCut').onclick = async () => {
   stopPlay();
   const ow = $('overwrite').checked && !$('owRow').hidden;
   if (ow) { vid.removeAttribute('src'); vid.load(); }
-  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), overwrite: ow, original: cur.file });
+  const r = await api.invoke('media:trim', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), crop: crop ? cropPx() : null, overwrite: ow, original: cur.file });
   if (!r.ok) { toast('Cắt bị lỗi: ' + r.error, 'error'); if (ow) openEditor(cur.file); return; }
   toast('Đã lưu ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
   openEditor(r.file);
@@ -599,7 +708,7 @@ $('saveCut').onclick = async () => {
 $('saveGif').onclick = async () => {
   if (!cur) return;
   stopPlay();
-  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), fps: gifFps(), scale: gifScale(), original: cur.file });
+  const r = await api.invoke('media:gif', { src: cur.src, segs: segs.map(g => ({ s: g.s, e: g.e, t: g.t })), notes: notesPng(), crop: crop ? cropPx() : null, fps: gifFps(), scale: gifScale(), original: cur.file });
   if (!r.ok) { toast('Xuất GIF bị lỗi: ' + r.error, 'error'); return; }
   S.gifFps = gifFps(); S.gifScale = gifScale();
   toast('Đã xuất ' + r.file.split(/[\\/]/).pop(), 'ok', { label: 'Mở thư mục', fn: () => api.invoke('files:openDir', r.file) });
@@ -769,10 +878,12 @@ function openDropped(p) {
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;
   const open = [...document.querySelectorAll('.scrim')].reverse().find(s => !s.hidden && !s.classList.contains('closing'));
+  if (cropEdit && !open && (e.key === 'Escape' || e.key === 'Enter')) { setCropEdit(false); e.preventDefault(); return; }
   if (e.key === 'Escape') { if (open) hideScrim(open); else if (!$('editor').hidden) showView('home'); return; }
   if (open || $('editor').hidden || !cur) return;
   const fd = 1 / (cur.fps || 30);
   const k = e.key.toLowerCase();
+  if (!e.ctrlKey && !e.altKey && k === 'c') { setCropEdit(!cropEdit); return; }
   if (!e.ctrlKey && !e.altKey && NOTE_KEYS[k]) { setNoteTool(VAnn.tool === NOTE_KEYS[k] ? null : NOTE_KEYS[k]); return; }
   if (VAnn.tool && ['1', '2', '3'].includes(k)) { setNoteSize(+k - 1); return; }
   if (e.code === 'Space') { togglePlay(); e.preventDefault(); }

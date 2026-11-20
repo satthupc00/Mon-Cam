@@ -14,6 +14,7 @@ const ICONS = {
   pause:'<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/>',
   play:'<path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/>',
   x:'<path d="M18 6L6 18M6 6l12 12"/>',
+  crop:'<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
   scissors:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/>',
   save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
   film:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',
@@ -33,6 +34,7 @@ const ICONS = {
   hl:'<path d="M9 11l6 6M4 20l3-1 10-10-3-3L4 16z"/><path d="M14 20h6"/>',
   blur:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h2v2H8zM12 8h2v2h-2zM8 12h2v2H8zM14 12h2v2h-2zM10 14h2v2h-2z" fill="currentColor" stroke="none"/>',
   undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
   reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
 };

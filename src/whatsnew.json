@@ -1,11 +1,12 @@
 {
-  "version": "2.3.2",
-  "date": "2026-11-13",
-  "new": [],
-  "improved": [
-    "Nhật ký chụp (shot-log.txt) ghi thêm chi tiết bước cắt ảnh để dễ tìm lỗi"
+  "version": "2.4.0",
+  "date": "2026-11-20",
+  "new": [
+    "Crop video trong màn chỉnh sửa: bấm nút Crop (phím C), kéo khung / kéo góc để cắt bớt khung hình, chọn tỉ lệ Tự do · 16:9 · 9:16 · 1:1 · 4:3. Áp dụng khi Lưu MP4 và Xuất GIF"
   ],
-  "fixed": [
-    "Màn chọn vùng chụp không còn co giãn ảnh nền khi cửa sổ lệch kích thước màn hình 1-2 điểm (gây nhoè chữ khi đang chọn, toạ độ cắt lệch nhẹ)"
-  ]
+  "improved": [
+    "Kéo ở vùng tối ngoài khung để vẽ khung crop mới; Enter / Esc để xong",
+    "Mục Thông tin hiện kích thước sau khi crop (vd 1280 × 720 → 720 × 720)"
+  ],
+  "fixed": []
 }
