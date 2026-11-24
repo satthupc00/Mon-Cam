@@ -1,12 +1,12 @@
 {
-  "version": "2.4.0",
-  "date": "2026-11-20",
-  "new": [
-    "Crop video trong màn chỉnh sửa: bấm nút Crop (phím C), kéo khung / kéo góc để cắt bớt khung hình, chọn tỉ lệ Tự do · 16:9 · 9:16 · 1:1 · 4:3. Áp dụng khi Lưu MP4 và Xuất GIF"
-  ],
+  "version": "2.4.1",
+  "date": "2026-11-24",
+  "new": [],
   "improved": [
-    "Kéo ở vùng tối ngoài khung để vẽ khung crop mới; Enter / Esc để xong",
-    "Mục Thông tin hiện kích thước sau khi crop (vd 1280 × 720 → 720 × 720)"
+    "Ctrl+PrtSc: Mon Cam ẩn ngay khi bắt đầu chọn vùng quay, giữ ẩn suốt lúc chờ và lúc quay, quay xong (hoặc huỷ) mới hiện lại",
+    "Bỏ tuỳ chọn \"Thu nhỏ Mon Cam khi đang quay\" (giờ luôn ẩn khi quay)"
   ],
-  "fixed": []
+  "fixed": [
+    "Quay dính giao diện Mon Cam khi bấm Quay (cửa sổ app tự hiện ra lúc bắt đầu quay)"
+  ]
 }

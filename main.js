@@ -252,7 +252,9 @@ async function startSelection(opts = {}) {
   if (rec || selecting) return;
   selecting = true;
   const mainWasVisible = win && win.isVisible() && !win.isMinimized();
-  // Giữ nguyên cửa sổ Mon Cam khi chọn vùng (chụp lẫn quay) để người dùng thấy và tự dời ra khỏi vùng
+  // Chọn vùng QUAY: ẩn hẳn Mon Cam ngay từ đầu (trước khi chụp ảnh nền) và giữ ẩn tới khi quay xong / huỷ.
+  // Chụp ảnh: giữ nguyên cửa sổ như cũ.
+  if (!opts.shot && mainWasVisible) { win.hide(); await new Promise(r => setTimeout(r, 250)); }
   const displays = screen.getAllDisplays();
   // Mặc định chụp bằng Chromium (đúng độ phân giải thật, nét ở mọi Scale). Ảnh Chromium trả về thiếu pixel
   // (hay gặp sau khi đổi màn / Scale / ngủ dậy) → tự chụp lại màn đó bằng ffmpeg ở độ phân giải gốc.
@@ -427,8 +429,8 @@ async function beginRecording(sel) {
   const r = new Recorder({ target, fps: Math.min(60, settings.fps), cursor: settings.cursor, quality: settings.quality, gif: fmt === 'gif', tmpDir: path.join(dirs.tmp, id) });
   rec = { r, dip: sel.dip, fmt, audio: fmt === 'mp4' && settings.audio, aSegs: [], id };
 
-  if (settings.hideWhileRec && win) win.minimize();
-  else if (win && !win.isVisible()) win.showInactive();
+  // Không bao giờ để cửa sổ app lọt vào video: đang hiện thì ẩn đi (ẩn ngay, không có hiệu ứng thu nhỏ), quay xong mới hiện lại
+  if (win && win.isVisible()) { win.hide(); await new Promise(r => setTimeout(r, 250)); }
 
   // Khung đỏ ngoài vùng quay
   if (sel.dip && !sel.full) {
