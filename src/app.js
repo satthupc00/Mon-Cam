@@ -40,6 +40,7 @@ function renderSettings() {
   const gif = S.format === 'gif';
   $('gifHint').hidden = !gif;
   $('keysOpt').hidden = !S.showKeys;
+  $('maxHint').hidden = S.quality !== 'max';
   $('audioRow').classList.toggle('disabled', gif);
   $('outDir').textContent = S.outDir;
   $('outDir').title = S.outDir;

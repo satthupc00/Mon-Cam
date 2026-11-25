@@ -1,12 +1,12 @@
 {
-  "version": "2.4.1",
-  "date": "2026-11-24",
-  "new": [],
-  "improved": [
-    "Ctrl+PrtSc: Mon Cam ẩn ngay khi bắt đầu chọn vùng quay, giữ ẩn suốt lúc chờ và lúc quay, quay xong (hoặc huỷ) mới hiện lại",
-    "Bỏ tuỳ chọn \"Thu nhỏ Mon Cam khi đang quay\" (giờ luôn ẩn khi quay)"
+  "version": "2.5.0",
+  "date": "2026-11-25",
+  "new": [
+    "Chất lượng quay mới \"Siêu nét\" (Cài đặt › Quay phim › Chất lượng): giữ trọn màu từng điểm ảnh, chữ nhỏ và viền màu nét như trên màn hình. File nặng hơn khoảng 20%"
   ],
-  "fixed": [
-    "Quay dính giao diện Mon Cam khi bấm Quay (cửa sổ app tự hiện ra lúc bắt đầu quay)"
-  ]
+  "improved": [
+    "Cắt / crop / ghi chú rồi lưu lại vẫn giữ nguyên độ nét Siêu nét",
+    "Đổi màu chính xác hơn khi quay ở mọi mức chất lượng"
+  ],
+  "fixed": []
 }
