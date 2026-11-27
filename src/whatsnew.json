@@ -1,12 +1,12 @@
 {
-  "version": "2.5.0",
-  "date": "2026-11-25",
-  "new": [
-    "Chất lượng quay mới \"Siêu nét\" (Cài đặt › Quay phim › Chất lượng): giữ trọn màu từng điểm ảnh, chữ nhỏ và viền màu nét như trên màn hình. File nặng hơn khoảng 20%"
-  ],
+  "version": "2.5.1",
+  "date": "2026-11-27",
+  "new": [],
   "improved": [
-    "Cắt / crop / ghi chú rồi lưu lại vẫn giữ nguyên độ nét Siêu nét",
-    "Đổi màu chính xác hơn khi quay ở mọi mức chất lượng"
+    "Video Siêu nét có ảnh bìa gắn sẵn → Windows Explorer hiện thumbnail như video thường",
+    "Các clip Siêu nét quay từ bản trước cũng được tự gắn ảnh bìa (chạy ngầm sau khi mở app)"
   ],
-  "fixed": []
+  "fixed": [
+    "Video Siêu nét bị mất thumbnail trong thư mục (chỉ hiện icon trình phát)"
+  ]
 }

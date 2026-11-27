@@ -5,7 +5,7 @@ const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { Recorder, BT709 } = require('./lib/recorder');
 const { run, probe, ffmpegPath, ffEnv } = require('./lib/ff');
-const { joinFiles, muxSegment } = require('./lib/compose');
+const { joinFiles, muxSegment, addCover } = require('./lib/compose');
 const winlist = require('./lib/winlist');
 const { renderSegments, makeGif, cleanSegs } = require('./lib/segments');
 
@@ -559,6 +559,7 @@ async function stopRecording() {
         }
       }
       await joinFiles(parts, out, tmpDir);
+      await addCover(out);
     }
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
     cur.aSegs.forEach(a => { if (a.file) try { fs.rmSync(a.file, { force: true }); } catch {} });
@@ -792,7 +793,7 @@ async function ensureThumb(file) {
   if (!fs.existsSync(t)) {
     const info = await probe(file);
     const at = Math.min(1, (info && info.duration || 0) / 2);
-    await run(['-ss', String(at), '-i', file, '-frames:v', '1', '-vf', 'scale=320:-2', t]).catch(() => {});
+    await run(['-ss', String(at), '-i', file, '-map', '0:v:0', '-frames:v', '1', '-vf', 'scale=320:-2', t]).catch(() => {});
   }
   return fs.existsSync(t) ? pathToFileURL(t).href : null;
 }
@@ -859,7 +860,7 @@ function setupIpc() {
     const info = await probe(src);
     const out = path.join(dirs.thumbs, 'strip_' + Date.now() + '.jpg');
     const fps = Math.max(0.01, n / Math.max(0.1, info.duration));
-    await run(['-i', src, '-an', '-vf', `fps=${fps.toFixed(4)},scale=-2:72,tile=${n}x1`, '-frames:v', '1', out]).catch(() => {});
+    await run(['-i', src, '-map', '0:v:0', '-an', '-vf', `fps=${fps.toFixed(4)},scale=-2:72,tile=${n}x1`, '-frames:v', '1', out]).catch(() => {});
     return fs.existsSync(out) ? pathToFileURL(out).href : null;
   });
   // Ghi chú từ màn chỉnh (data URL PNG) → file tạm cho ffmpeg
@@ -879,6 +880,7 @@ function setupIpc() {
     const ov = notesFile(notes);
     try {
       await renderSegments(src, list, out, { overlay: ov, crop, onP: p => send('busy', { text: 'Đang ghép & lưu…', p }) });
+      await addCover(out);
       let final = out;
       if (overwrite && out.endsWith('.part.mp4')) { fs.renameSync(out, keep); final = keep; }
       return { ok: true, file: final };
@@ -911,6 +913,17 @@ function setupIpc() {
     fs.writeFileSync(f, Buffer.from(buf));
     return f;
   });
+}
+
+// Clip Siêu nét quay từ bản cũ (chưa có ảnh bìa) → gắn ảnh bìa để Explorer hiện lại thumbnail. Chạy ngầm, từng file một
+async function coverOldClips() {
+  let files = [];
+  try { files = fs.readdirSync(settings.outDir).filter(f => /\.mp4$/i.test(f)).map(f => path.join(settings.outDir, f)); } catch { return; }
+  for (const f of files) {
+    if (rec) return;
+    const info = await probe(f).catch(() => null);
+    if (info && info.pix === 'yuv444p' && !info.cover) await addCover(f);
+  }
 }
 
 // ---------- Tự cập nhật ----------
@@ -946,6 +959,7 @@ app.whenReady().then(() => {
   applyLoginItem();
   registerKeys();
   if (app.isPackaged && updater) setTimeout(() => updater.checkForUpdates().catch(() => {}), 3000);
+  setTimeout(coverOldClips, 15000);
 });
 app.on('will-quit', () => { globalShortcut.unregisterAll(); keepHook = false; stopClickFx(); stopKeyCast(); winlist.stop(); });
 app.on('window-all-closed', () => { if (quitting || !settings.closeToTray) app.quit(); });
